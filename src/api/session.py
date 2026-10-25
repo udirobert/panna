@@ -296,6 +296,7 @@ class MatchSession:
             "score": score,
             "failed": sorted(self.failed),
             "health": self.result.get("health", {}),
+            "commentary_source": self.result.get("commentary_source", "template"),
             "events": events_so_far,
             "key_moments": revealed["detection"],
             "insights": revealed["insight"],

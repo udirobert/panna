@@ -7,6 +7,17 @@ export async function generateMatch(matchId = "match_001", seed = 42) {
   return r.json();
 }
 
+/** Ensure a (possibly shared) match is live and return its identity. */
+export async function resolveMatch(matchId: string) {
+  const r = await fetch(`${BASE}/matches/resolve/${matchId}`);
+  return r.json();
+}
+
+/** The public share poster for a match. */
+export function shareUrl(matchId: string) {
+  return `${BASE}/share/${matchId}`;
+}
+
 export async function getInsights(matchId: string) {
   const r = await fetch(`${BASE}/insights/${matchId}`);
   return r.json();

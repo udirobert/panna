@@ -26,7 +26,6 @@ class DirectorAgent(BaseAgent):
         events = context["events"]
         shared: dict = {"events": events}
         errors: dict[str, str] = {}
-
         # 1. Scout
         km, err = self.scout.safe_run({"events": events})
         if err:
@@ -72,15 +71,36 @@ class DirectorAgent(BaseAgent):
                     agent="analyst", status="degraded", error=errors["analyst"]
                 )
 
-        # 4. Commentator (fallback to template if fails)
-        commentary, err = self.commentator.safe_run(shared)
-        if err:
-            errors["commentator"] = err
-            commentary = []
-            self.health["commentator"] = AgentHealth(agent="commentator", status="down", error=err)
+        # 4. Commentator (Booth): Foundry LLM narrative when available,
+        #    deterministic template otherwise — always traced.
+        from src.foundry import narrative as _narrative
+
+        booth = None
+        try:
+            booth = _narrative.booth_commentary(self._match_id(shared), shared)
+        except Exception as exc:  # noqa: BLE001
+            errors["commentator"] = f"booth: {exc}"
+        if booth is not None and booth.get("result"):
+            shared["commentary"] = booth["result"]
+            shared["commentary_source"] = booth["source"]
+            self.health["commentator"] = AgentHealth(
+                agent="commentator",
+                status="healthy",
+                last_ok=booth.get("model"),
+                error=None if booth["status"] == "ok" else f"fallback ({booth['status']})",
+            )
         else:
-            self.health["commentator"] = AgentHealth(agent="commentator", status="healthy")
-        shared["commentary"] = commentary or []
+            commentary, err = self.commentator.safe_run(shared)
+            if err:
+                errors["commentator"] = errors.get("commentator", err)
+                shared["commentary"] = []
+                self.health["commentator"] = AgentHealth(
+                    agent="commentator", status="down", error=err
+                )
+            else:
+                shared["commentary"] = commentary or []
+                self.health["commentator"] = AgentHealth(agent="commentator", status="healthy")
+            shared["commentary_source"] = "template"
 
         # 5. Prioritize broadcast feed: goals + high-importance moments first
         feed = self._prioritize(shared)
@@ -89,10 +109,18 @@ class DirectorAgent(BaseAgent):
             "key_moments": shared["key_moments"],
             "insights": shared["insights"],
             "commentary": shared["commentary"],
+            "commentary_source": shared.get("commentary_source", "template"),
             "feed": feed,
             "health": {k: v.model_dump() for k, v in self.health.items()},
             "errors": errors,
         }
+
+    @staticmethod
+    def _match_id(shared: dict) -> str:
+        events = shared.get("events") or []
+        if events:
+            return getattr(events[0], "match_id", "match")
+        return "match"
 
     @staticmethod
     def _prioritize(shared: dict) -> list[dict]:

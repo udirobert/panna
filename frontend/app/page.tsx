@@ -9,8 +9,8 @@ import ScoreBug from "../components/ScoreBug";
 import Swarm from "../components/Swarm";
 import Ticker from "../components/Ticker";
 import Verdict from "../components/Verdict";
-import { generateMatch, playback } from "../lib/api";
-import { LENSES, type Lens, type Insight } from "../lib/types";
+import { generateMatch, playback, resolveMatch, shareUrl } from "../lib/api";
+import { LENSES, type Lens, type Insight, type RecapStructured } from "../lib/types";
 import { useMatchStream } from "../lib/useMatchStream";
 
 const SPEEDS = [15, 30, 60, 120, 300];
@@ -25,16 +25,65 @@ export default function Home() {
   const [resetArmed, setResetArmed] = useState(false);
   const [goalKey, setGoalKey] = useState(0);
   const [recap, setRecap] = useState<string | null>(null);
+  const [recapSource, setRecapSource] = useState<string>("template");
+  const [recapData, setRecapData] = useState<RecapStructured | null>(null);
+  const [engineError, setEngineError] = useState<string | null>(null);
+  const [booting, setBooting] = useState(false);
   const lastGoalRef = useRef<string | null>(null);
+  const bootedRef = useRef(false);
 
   const s = useMatchStream(active ? matchId : null, seed);
 
   const start = useCallback(async (id: string, newSeed: number) => {
     setResetArmed(false);
-    const g = await generateMatch(id, newSeed);
-    if (g.event_count > 0) {
-      setSeed(newSeed);
-      setActive(true);
+    setEngineError(null);
+    setBooting(true);
+    try {
+      const g = await generateMatch(id, newSeed);
+      if (g.event_count > 0) {
+        setSeed(newSeed);
+        setActive(true);
+        // reflect the match in the URL so it's shareable
+        const url = `${window.location.origin}/?match=${id}&seed=${newSeed}`;
+        window.history.replaceState(null, "", url);
+      }
+    } catch (e) {
+      setEngineError(
+        "The match engine is unreachable. Is the backend running? " +
+          `(expected at ${BASE})`,
+      );
+    } finally {
+      setBooting(false);
+    }
+  }, []);
+
+  // Boot from a shared link: /?match=match_137&seed=137
+  useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const sharedMatch = params.get("match");
+    const sharedSeed = Number(params.get("seed"));
+    if (sharedMatch) {
+      setBooting(true);
+      (async () => {
+        try {
+          const info = await resolveMatch(sharedMatch);
+          setMatchId(info.match_id);
+          setSeed(info.seed);
+          setActive(true);
+        } catch {
+          setEngineError(`Could not reach the match engine at ${BASE}.`);
+        } finally {
+          setBooting(false);
+        }
+      })();
+      return;
+    }
+    if (Number.isFinite(sharedSeed) && sharedSeed > 0) {
+      const id = `match_${sharedSeed}`;
+      setMatchId(id);
+      setSeed(sharedSeed);
     }
   }, []);
 
@@ -70,7 +119,11 @@ export default function Home() {
     (async () => {
       const r = await fetch(`${BASE}/recap/${matchId}`);
       const j = await r.json();
-      if (!cancelled) setRecap(j.recap ?? "");
+      if (!cancelled) {
+        setRecap(j.verdict ?? j.recap ?? "");
+        setRecapSource(j.source ?? "template");
+        setRecapData(j.structured ?? null);
+      }
     })();
     return () => {
       cancelled = true;
@@ -87,7 +140,6 @@ export default function Home() {
   }, [spotlightId, s.insights, s.eventById]);
 
   // Board = clock-filtered event ledger (deterministic, survives any seek).
-  // SSE events are redundant for rendering; the ledger is ground truth.
   const visibleEvents = useMemo(() => {
     const all = Object.values(s.eventById);
     if (all.length === 0) return [];
@@ -106,12 +158,47 @@ export default function Home() {
     void playback(matchId, { action: s.playing ? "pause" : "play" });
   };
 
+  const openShare = () => window.open(shareUrl(matchId), "_blank");
+
   const goalBurst = s.lastGoal
     ? { x: s.lastGoal.x, y: s.lastGoal.y, team: s.lastGoal.team, key: goalKey }
     : null;
 
+  const commentarySource = s.snapshot?.commentary_source ?? "template";
+  const provenance =
+    commentarySource === "foundry"
+      ? "NARRATED BY GPT-5.4 · MICROSOFT FOUNDRY"
+      : "TEMPLATE NARRATION · FOUNDRY OFFLINE (DETERMINISTIC)";
+
   return (
     <div className="container">
+      {/* engine error state (visible, not silent) */}
+      {engineError && (
+        <div
+          style={{
+            border: "1px solid var(--down)",
+            background: "rgba(248,81,73,0.08)",
+            borderRadius: 8,
+            padding: "14px 18px",
+            marginBottom: 14,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 14,
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div className="display" style={{ color: "var(--down)", letterSpacing: "0.12em" }}>
+              ⚠ ENGINE UNREACHABLE
+            </div>
+            <div className="muted" style={{ marginTop: 4 }}>{engineError}</div>
+          </div>
+          <button className="btn" onClick={() => start(matchId, seed)}>
+            RETRY
+          </button>
+        </div>
+      )}
+
       {/* top chrome: wordmark + score bug + controls */}
       <div
         style={{
@@ -130,6 +217,11 @@ export default function Home() {
           <div className="muted" style={{ letterSpacing: "0.08em" }}>
             MATCH INTELLIGENCE THAT EXPLAINS ITSELF · SEED {seed}
           </div>
+          {active && (
+            <div className="muted display" style={{ letterSpacing: "0.1em", marginTop: 2, color: "var(--gold)" }}>
+              {provenance}
+            </div>
+          )}
         </div>
 
         {active && s.snapshot && (
@@ -146,7 +238,7 @@ export default function Home() {
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <button className={`btn ${!active || s.playing ? "btn-primary" : ""}`} onClick={playToggle}>
-            {!active ? "▶ GENERATE & KICK OFF" : s.playing ? "❚❚ FREEZE" : "▶ PLAY"}
+            {booting ? "LOADING…" : !active ? "▶ GENERATE & KICK OFF" : s.playing ? "❚❚ FREEZE" : "▶ PLAY"}
           </button>
           {active && (
             <button
@@ -186,6 +278,11 @@ export default function Home() {
               ))}
             </select>
           )}
+          {active && (
+            <button className="btn" onClick={openShare} title="open the shareable case-file poster">
+              ⇪ SHARE
+            </button>
+          )}
           <button className="btn" onClick={arm}>
             {resetArmed ? "⟳ CONFIRM" : "⟳ NEW FIXTURE"}
           </button>
@@ -205,11 +302,12 @@ export default function Home() {
             EVERY MATCH LEAVES A VERDICT.
           </div>
           <div className="muted" style={{ marginTop: 8 }}>
-            Cross-examine yours — every match is generated on demand, seed {seed}.
+            Cross-examine yours — every match is generated on demand, seed {seed}. The link is the
+            match.
           </div>
           <div style={{ marginTop: 22 }}>
             <button className="btn btn-primary" style={{ fontSize: 15, padding: "12px 26px" }} onClick={playToggle}>
-              ▶ GENERATE & KICK OFF
+              {booting ? "LOADING…" : "▶ GENERATE & KICK OFF"}
             </button>
           </div>
         </div>
@@ -334,20 +432,23 @@ export default function Home() {
         <div style={{ marginTop: 14 }}>
           <Verdict
             recap={recap}
+            source={recapSource}
             score={s.score}
             home={s.snapshot.home_team}
             away={s.snapshot.away_team}
             insights={s.insights}
+            data={recapData}
             onNewFixture={arm}
             resetArmed={resetArmed}
+            onShare={openShare}
           />
         </div>
       )}
 
       <div className="muted" style={{ marginTop: 18, display: "flex", justifyContent: "space-between" }}>
         <span>
-          Synthetic, football-realistic data only · generated on demand (seed {seed}) · no real
-          Premier League data redistributed.
+          Synthetic, football-realistic data only · generated on demand (seed {seed}) · the URL is
+          the match · no real Premier League data redistributed.
         </span>
         <span className="display" style={{ letterSpacing: "0.14em" }}>
           MICROSOFT FOUNDRY · MAF · AZURE

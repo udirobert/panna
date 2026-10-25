@@ -20,6 +20,7 @@ def get_commentary(match_id: str) -> dict:
     return {
         "match_id": match_id,
         "commentary": serialized,
+        "commentary_source": result.get("commentary_source", "template"),
         "feed": result.get("feed", []),
         "health": result.get("health", {}),
     }

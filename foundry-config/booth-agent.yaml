@@ -1,0 +1,43 @@
+# Foundry Agent Service — hosted agent definition (the Booth)
+# Deploy: azd deploy with the Foundry Agent Service connector, or
+#         az extension add --name aifoundry && az aifoundry agent create
+# The hosted agent exposes a sandboxed session (Responses API + Invocations).
+# This mirrors the local NarratorAgent prompt so the cloud and local Booths
+# behave identically; the FastAPI service can proxy to it via FOUNDRY_ENDPOINT.
+
+name: panna-booth
+model:
+  deployment: gpt-5.4          # via Model Router (Foundry)
+  apiVersion: 2025-03-01-preview
+  temperature: 0.5
+  maxTokens: 900
+
+instructions: |
+  You are 'The Booth', a broadcast football commentator. Write punchy, timed,
+  professional play-by-play lines. Each line carries a match minute. Cite the
+  tactical insight that justifies it when one applies. Vary tone between
+  'broadcast' and 'analysis'. Respond ONLY with a JSON array of objects with
+  keys: minute (int), second (int, 0-59), text (str),
+  tone ('broadcast'|'analysis'), insight_ids (array of str, may be empty).
+
+# Tools via Toolboxes (MCP): connect Foundry IQ knowledge bases for historical
+# match context once the IQ endpoint is configured.
+tools:
+  - name: toolbox
+    endpoint: ""   # Foundry Toolboxes MCP endpoint (governed tools + IQ)
+
+# Memory (public preview): user/session personalization for "My Lens".
+memory:
+  session: true
+  user: true
+
+# Enterprise controls
+tracing:
+  enabled: true
+guardrails:
+  - type: contentSafety
+    categories:
+      - Hate
+      - SelfHarm
+  - type: promptAttack
+    threshold: 0.5

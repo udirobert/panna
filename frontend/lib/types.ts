@@ -83,6 +83,7 @@ export type Snapshot = {
   key_moments: Detection[];
   insights: Insight[];
   commentary: Commentary[];
+  commentary_source?: "foundry" | "template";
   momentum: {
     minutes: number[];
     home_cum: number[];
@@ -128,6 +129,27 @@ export const initialState: MatchState = {
   momentum: [],
   lastGoal: null,
   goalFlashUntil: 0,
+};
+
+export type RecapGoal = { minute: number; team: string; description: string };
+export type RecapExhibit = {
+  type: string;
+  claim: string;
+  confidence: number;
+  evidence: string[];
+};
+export type RecapStructured = {
+  home_team: string;
+  away_team: string;
+  score: { home: number; away: number };
+  xg: { home: number; away: number };
+  goals: RecapGoal[];
+  exhibits: RecapExhibit[];
+  formations?: {
+    kickoff: { home: string; away: string };
+    final: { home: string; away: string };
+    evolution: { minute: number; side: "home" | "away"; formation: string }[];
+  };
 };
 
 export type Lens = "all" | "tactics" | "attack" | "story";

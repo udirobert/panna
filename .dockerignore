@@ -1,0 +1,9 @@
+.git
+node_modules
+frontend
+__pycache__
+*.pyc
+.env
+tmp
+.pytest_cache
+.ruff_cache
