@@ -1,6 +1,6 @@
 // Panna — Azure Container Apps: API service (event-driven, autoscaling)
-// Deploy with azd:  azd up   (provisions + deploys + shows apiEndpoint)
-// This file is the service module referenced by the root azure.yaml.
+// Deploy with:  ./azure/deploy.sh   (builds, pushes, provisions, prints endpoint)
+// Self-contained module: pass environmentName + image, optionally Foundry + frontend params.
 
 @description('Short environment name (lowercase, no hyphens)')
 param environmentName string
@@ -17,6 +17,9 @@ param foundryDeployment string = 'gpt-5.4'
 param foundryApiVersion string = '2025-03-01-preview'
 @secure()
 param foundryApiKey string = ''
+
+// Where the shareable case-file poster should point its "replay" button
+param frontendOrigin string = ''
 
 var caName = 'panna-${environmentName}'
 
@@ -62,6 +65,10 @@ resource ca 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'FOUNDRY_API_VERSION'
               value: foundryApiVersion
+            }
+            {
+              name: 'FRONTEND_ORIGIN'
+              value: frontendOrigin
             }
           ]
           ports: [

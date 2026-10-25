@@ -13,6 +13,7 @@
 #   export FOUNDRY_ENDPOINT="https://<project>.services.ai.azure.com"
 #   export FOUNDRY_API_KEY="<key>"          # never commit / never echo
 #   export FOUNDRY_DEPLOYMENT="gpt-5.4"
+#   export FRONTEND_ORIGIN="https://<frontend-host>"  # where the share poster's replay link points
 #
 # Run:
 #   ./azure/deploy.sh
@@ -24,8 +25,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 : "${AZURE_LOCATION:=westeurope}"
-: "${FOUNDRY_ENDPOINT:}"
+: "${FOUNDRY_ENDPOINT:=}"
 : "${FOUNDRY_DEPLOYMENT:=gpt-5.4}"
+: "${FRONTEND_ORIGIN:=}"
 
 ENV_NAME="panna$(date +%s | tail -c 6)"
 RG="rg-${ENV_NAME}"
@@ -66,6 +68,7 @@ az deployment group create \
     image="${IMAGE}" \
     foundryEndpoint="${FOUNDRY_ENDPOINT}" \
     foundryDeployment="${FOUNDRY_DEPLOYMENT}" \
+    frontendOrigin="${FRONTEND_ORIGIN}" \
     ${SECRET_ARG:-foundryApiKey=none} \
   --output table
 

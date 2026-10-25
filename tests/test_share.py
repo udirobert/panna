@@ -38,8 +38,9 @@ def test_share_poster_renders_self_contained_html():
     assert "REPLAY THIS MATCH" in doc
     assert "CASE FILED" in doc
     assert "match_001" not in doc
-    # replay link carries the match id
+    # replay link carries the match id and points at the frontend
     assert "/?match=share_1" in doc
+    assert "http://localhost:3000" in doc
 
 
 def test_share_404_for_unknown_match():

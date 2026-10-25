@@ -109,8 +109,9 @@ def share(match_id: str) -> HTMLResponse:
         f"<span>{html.escape(g.description)}</span></div>"
         for g in goals
     )
-    origin = os.getenv("FRONTEND_ORIGIN", "").rstrip("/")
-    replay_url = f"{origin}/?match={match_id}" if origin else f"/?match={match_id}"
+    # default to the local dev frontend; deploy sets FRONTEND_ORIGIN explicitly
+    origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
+    replay_url = f"{origin}/?match={match_id}"
 
     doc = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

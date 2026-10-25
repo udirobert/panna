@@ -72,6 +72,12 @@ export default function Home() {
           setMatchId(info.match_id);
           setSeed(info.seed);
           setActive(true);
+          // keep the address bar canonical: /?match=<id>&seed=<n>
+          window.history.replaceState(
+            null,
+            "",
+            `${window.location.origin}/?match=${info.match_id}&seed=${info.seed}`,
+          );
         } catch {
           setEngineError(`Could not reach the match engine at ${BASE}.`);
         } finally {
