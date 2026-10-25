@@ -8,11 +8,13 @@ import Pitch from "../components/Pitch";
 import ScoreBug from "../components/ScoreBug";
 import Swarm from "../components/Swarm";
 import Ticker from "../components/Ticker";
+import Verdict from "../components/Verdict";
 import { generateMatch, playback } from "../lib/api";
 import { LENSES, type Lens, type Insight } from "../lib/types";
 import { useMatchStream } from "../lib/useMatchStream";
 
 const SPEEDS = [15, 30, 60, 120, 300];
+const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Home() {
   const [matchId, setMatchId] = useState("match_001");
@@ -22,6 +24,7 @@ export default function Home() {
   const [spotlightId, setSpotlightId] = useState<string | null>(null);
   const [resetArmed, setResetArmed] = useState(false);
   const [goalKey, setGoalKey] = useState(0);
+  const [recap, setRecap] = useState<string | null>(null);
   const lastGoalRef = useRef<string | null>(null);
 
   const s = useMatchStream(active ? matchId : null, seed);
@@ -45,6 +48,8 @@ export default function Home() {
     setMatchId(newId);
     setSpotlightId(null);
     setLens("all");
+    setRecap(null);
+    lastGoalRef.current = null;
     await start(newId, newSeed);
   }, [resetArmed, start]);
 
@@ -56,6 +61,21 @@ export default function Home() {
       setGoalKey((k) => k + 1);
     }
   }, [s.lastGoal]);
+
+  // full time → pull the case (recap) once
+  const fullTime = active && s.minute >= 90 && !s.playing;
+  useEffect(() => {
+    if (!fullTime || recap) return;
+    let cancelled = false;
+    (async () => {
+      const r = await fetch(`${BASE}/recap/${matchId}`);
+      const j = await r.json();
+      if (!cancelled) setRecap(j.recap ?? "");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fullTime, recap, matchId]);
 
   const spotlight: { insight: Insight; events: any[] } | null = useMemo(() => {
     if (!spotlightId) return null;
@@ -298,6 +318,21 @@ export default function Home() {
           >
             <AgentRail failed={s.failed} onToggleFail={failToggle} onReset={arm} resetArmed={resetArmed} />
           </div>
+        </div>
+      )}
+
+      {/* full time: the case, filed */}
+      {fullTime && recap && s.snapshot && (
+        <div style={{ marginTop: 14 }}>
+          <Verdict
+            recap={recap}
+            score={s.score}
+            home={s.snapshot.home_team}
+            away={s.snapshot.away_team}
+            insights={s.insights}
+            onNewFixture={arm}
+            resetArmed={resetArmed}
+          />
         </div>
       )}
 
