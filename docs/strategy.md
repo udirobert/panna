@@ -1,6 +1,9 @@
 # Panna — Build strategy (revised 2026-10-25)
 
 > Supersedes the original generic plan. See `docs/critique.md` for the research-backed rationale.
+> **Presentation layer supersession:** `docs/design-vision.md` (v2, "The Pitch Is the Blackboard")
+> governs the frontend, agent presentation identity, failure-recovery visuals, and the demo
+> film ("The Verdict"). This doc stays authoritative for backend/stack/schedule.
 > **Deadline: Oct 27, 2026 11:59 pm PT. Today is Oct 25 — ~2 days.**
 
 ## Goal
@@ -19,22 +22,31 @@ Next.js frontend. Synthetic football data only. Every insight carries evidence c
 - **Enterprise controls:** Tracing (any framework), ASSERT evals, ACS YAML guardrails, Guided Guardrails, Rubric evaluator.
 - **Compute:** Azure Container Apps (FastAPI API) + Azure Functions (per-agent serverless workers) + Azure Event Hubs (synthetic stream ingestion).
 - **Models:** GPT-5.4 / GPT-5.4 Pro via Model Router (or MAI-Thinking-1). Voice Live optional.
-- **Frontend:** Next.js live match dashboard (evidence chips, commentary stream, recap, "My Lens").
+- **Frontend:** Next.js — the pitch *is* the interface (design-vision v2): no card
+  grid; chalk telestration, boids swarm, pitch-control glow, Ceefax-style ticker,
+  score bug, lens switching, SSE replay with rewind/freeze/failure injection.
 - **Data:** synthetic StatsBomb-like event schema, seeded deterministic match (~90 min, ~1500 events), real xG/PPDA/formation models.
 
 ## The 4-agent pipeline (plus Recap)
 
-| Agent | Role | Output |
-|---|---|---|
-| **Scout** | Watches synthetic stream; flags key moments (shots, tackles, possession shifts, formation changes, set pieces) | Structured markers: `{event_id, minute, type, importance, evidence:[event_ids]}` |
-| **Analyst** | Computes tactical insights: xG per shot (distance/angle/body part), PPDA pressing intensity, formation effectiveness, player influence (xT/network), momentum (rolling xG) | Insights: `{id, type, claim, value, confidence, evidence:[event_ids]}` |
-| **Commentator** | Timed broadcast NL from Scout+Analyst, cites insights, professional tone | Commentary entries with minute/second timing |
-| **Director** | A2A orchestration, prioritization, shared state, failure recovery (retry + degraded fallback), agent health | Curated broadcast feed |
-| **Recap** (Day2) | Post-match summary from all above | Recap text + top insights |
+Backend modules keep these names. Their **presentation identity** (per
+`docs/design-vision.md` §1) is: **Numbers see it, Chalk proves it, Booth says it** —
+and the Pitch itself is the fourth actor (a blackboard, not a boss).
+
+| Agent (backend) | Presentation identity | Role | Output |
+|---|---|---|---|
+| **Scout** | **Numbers** — the swarm | Watches synthetic stream; flags key moments (shots, tackles, possession shifts, formation changes, set pieces) | Structured markers: `{event_id, minute, type, importance, evidence:[event_ids]}` |
+| **Analyst** | **Chalk** — the specialists | Computes tactical insights: xG per shot (distance/angle/body part), PPDA pressing intensity, formation effectiveness, player influence (xT/network), momentum (rolling xG) | Insights: `{id, type, claim, value, confidence, evidence:[event_ids]}` |
+| **Commentator** | **Booth** | Timed broadcast NL from Scout+Analyst, cites insights, professional tone | Commentary entries with minute/second timing |
+| **Director** | **the Pitch** (coordination as a place) | A2A orchestration, prioritization, shared state, failure recovery (retry + degraded fallback), agent health | Curated broadcast feed |
+| **Recap** (Day2) | recap = the annotated board, printed | Post-match summary from all above | Recap text + top insights |
 
 ## Explainability contract
 
-Every insight = `{id, type, claim, value, confidence, evidence: [event_ids], agent, timestamp}`. UI renders evidence as clickable chips that highlight source events. ASSERT evals enforce "every claim cites ≥1 event" and "no fabricated events".
+Every insight = `{id, type, claim, value, confidence, evidence: [event_ids], agent, timestamp}`.
+UI renders evidence as an **Evidence Spotlight** (per design-vision §2): chalk/telestration
+marks on the pitch with gold attribution lines back to the claim — no tooltip cards.
+ASSERT evals enforce "every claim cites ≥1 event" and "no fabricated events".
 
 ## Failure recovery (explicitly judged)
 
@@ -43,32 +55,53 @@ Director wraps each agent call in try/except with timeout + exponential backoff 
 - Commentator down → insights still published.
 - Emit agent-health events to frontend (green/amber/red per agent).
 
+**Presentation** (design-vision §1): recovery is shown as *emergence* — a specialist
+cluster goes dark, its half-drawn chalk stays on the board (stigmergy), peer particles
+converge on the orphaned traces and finish the annotation. No amber status cards in
+the film; the scriptable failure-injection endpoint drives the rehearsed demo beat.
+
 ## Compressed 48h plan
 
-### Day 1 (Oct 25) — core pipeline + frontend
+### Day 1 (Oct 25) — core pipeline + frontend ✅ (scaffolded)
 - Morning: Synthetic data generator (StatsBomb-like schema, seeded match) + xG/PPDA/formation models. Commit.
 - Midday: Scout + Analyst agents (MAF, Foundry GPT-5.4), evidence citations. Local run.
 - Afternoon: Commentator agent (timed, broadcast tone) + Director (A2A orchestration, shared state, failure recovery).
-- Evening: Next.js frontend (live feed, insight cards with evidence, commentary panel). End-to-end local test.
+- Evening: Next.js frontend v1 (card grid, shipped in scaffold commit). **Superseded by Day 2 vision build.**
 
-### Day 2 (Oct 26) — cloud + polish + submit
-- Morning: Deploy API to ACA, agents to Foundry hosted agents, Event Hubs ingestion, Foundry IQ, tracing/ACS. (Cut Event Hubs → polling if time.)
-- Midday: Recap agent + "My Lens" personalization (Memory). Voice Live only if time.
-- Afternoon: Demo video (<2 min) + README pitch + submit. Buffer.
+### Day 2 (Oct 26) — the vision build + cloud + polish + submit
+
+Frontend work follows `docs/design-vision.md` §7 — **build the shots, not the screens**
+(every item maps to a beat in "The Verdict" demo film):
+
+1. SSE stream + replay clock + rewind/freeze/failure-injection controls
+2. Pitch SVG + chalk telestration system + Evidence Spotlight
+3. Boids swarm canvas (~40–80 particles, flocking + quorum hardening)
+4. Pitch-control glow + momentum/xG SVG (BBC-style)
+5. Ticker band + score bug + lens switching (tactical/attack/story)
+6. Specialist failure/recovery choreography, rehearsed
+7. Recap = annotated-board print layout
+8. Seed regeneration on air + invitation screen
+9. Sound pass + title cards naming rubric criteria
+
+Cloud work, morning in parallel where possible: deploy API to ACA, agents to Foundry
+hosted agents, Event Hubs ingestion (cut → SSE from API), Foundry IQ, tracing/ACS.
+Midday: Recap agent + lens personalization (Memory; cut → toggle). Demo video
+afternoon (<2 min, "The Verdict" script) + README pitch + submit. Buffer.
 
 ## Cut if time short (in order)
 1. Voice Live
-2. Memory/personalization (keep simple prefs toggle)
+2. Memory/personalization (keep simple lens toggle)
 3. Foundry IQ RAG (keep in-memory historical snippets)
-4. Event Hubs (polling)
+4. Event Hubs (SSE replay from API directly)
 5. Recap agent (compute on demand)
+6. Swarm degrades: 15–20 particles with convergence easing, no full flocking
 
 ## Never cut
-- Synthetic data + 4 agents with distinct roles
-- Evidence citations
-- Failure recovery demo
-- Frontend (balanced FE/BE)
-- Demo video
+- Synthetic data + 4 agents with distinct roles (Numbers/Chalk/Booth/Pitch presentation)
+- Evidence citations as the Evidence Spotlight (explainability is the core ask)
+- Failure recovery demo (emergent, rehearsed)
+- Frontend (balanced FE/BE) — the pitch-as-blackboard presentation
+- Demo video ("The Verdict" film)
 
 ## Security & governance
 - ACS YAML at input/LLM/state/tool/output checkpoints (PII filter, jailbreak protection, task adherence).

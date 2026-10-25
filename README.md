@@ -52,12 +52,18 @@ AI-driven match intelligence for the **Microsoft Premier League "Inside the Game
 
 ### The 4-agent pipeline
 
-| Agent | Role | Output |
-|---|---|---|
-| **Scout** | Watches the synthetic event stream, flags key moments (shots, tackles, possession shifts, formation changes) | Structured event markers with timestamps and evidence citations |
-| **Analyst** | Computes tactical insights (xG, formation effectiveness, pressing intensity, player influence, momentum shifts) | Statistical insights with evidence citations (which events led to this conclusion) |
-| **Commentator** | Generates natural-language broadcast commentary from Scout + Analyst output | Live commentary text with timing, tone, and narrative arc |
-| **Director** | Orchestrates all three agents, decides what to surface and when, handles failure recovery | Curated broadcast feed with prioritized insights |
+**Presentation identity:** *Numbers see it, Chalk proves it, Booth says it* — and the
+pitch itself is the fourth actor. The interface is the match surface: agents coordinate
+through a shared blackboard (the pitch), leaving chalk traces rather than sending
+messages. See [docs/design-vision.md](docs/design-vision.md) for the full design language
+and the demo film script ("The Verdict").
+
+| Agent | Presentation | Role | Output |
+|---|---|---|---|
+| **Scout** | **Numbers** (the swarm) | Watches the synthetic event stream, flags key moments (shots, tackles, possession shifts, formation changes) | Structured event markers with timestamps and evidence citations |
+| **Analyst** | **Chalk** (the specialists) | Computes tactical insights (xG, formation effectiveness, pressing intensity, player influence, momentum shifts) | Statistical insights with evidence citations (which events led to this conclusion) |
+| **Commentator** | **Booth** | Generates natural-language broadcast commentary from Scout + Analyst output | Live commentary text with timing, tone, and narrative arc |
+| **Director** | **the Pitch** (coordination as a place) | Orchestrates all three agents, decides what to surface and when, handles failure recovery | Curated broadcast feed with prioritized insights |
 
 ### Why this wins
 
@@ -80,7 +86,7 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
 - **Azure Functions** — serverless agents runtime (per-agent workers)
 - **Azure Event Hubs** — synthetic event stream ingestion
 - **Models** — GPT-5.4 / GPT-5.4 Pro via Model Router (or MAI-Thinking-1); Voice Live optional
-- **Frontend** — Next.js live match dashboard
+- **Frontend** — Next.js: the pitch *is* the interface (chalk telestration, boids swarm, pitch-control glow, Ceefax-style ticker, lens switching)
 - **GitHub Copilot** — development
 
 ### Synthetic data
@@ -95,7 +101,10 @@ Projects must use synthetic, football-realistic data. No real Premier League mat
 
 ### Explainability
 
-Every insight comes with evidence citations — which events led to this conclusion. This is what makes it "explainable match intelligence" — the hackathon's core ask.
+Every insight comes with evidence citations — which events led to this conclusion.
+On screen, evidence is shown as an **Evidence Spotlight**: the pitch dims, cited
+events glow gold, and chalk lines draw themselves from the claim to its sources.
+This is what makes it "explainable match intelligence" — the hackathon's core ask.
 
 ## Relationship to SportWarren
 
@@ -107,32 +116,41 @@ Panna is built as a **separate project** for the hackathon. After judging, the f
 - Microsoft Foundry → replaces OpenAI/Anthropic with Azure OpenAI
 - Azure deployment → adds Azure as a deployment target alongside Vercel
 
-## Build plan (compressed — see docs/strategy.md, deadline Oct 27 2026)
+## Build plan (compressed — see docs/strategy.md + docs/design-vision.md, deadline Oct 27 2026)
 
-### Day 1 (Oct 25) — core pipeline + frontend
+### Day 1 (Oct 25) — core pipeline + frontend scaffold ✅
 - Synthetic data generator (StatsBomb-like schema, seeded match) + real xG/PPDA/formation models
 - Scout + Analyst agents (MAF, Foundry GPT-5.4) with evidence citations
 - Commentator agent (timed broadcast NL) + Director (A2A orchestration, shared state, failure recovery)
-- Next.js frontend (live feed, insight cards with evidence, commentary panel); end-to-end local test
+- Next.js frontend v1 (shipped in scaffold commit; superseded by the Day 2 vision build)
 
-### Day 2 (Oct 26) — cloud + polish + submit
-- Deploy API to ACA; agents to Foundry hosted agents; Event Hubs; Foundry IQ; tracing/ACS
-- Recap agent + "My Lens" personalization (Memory); Voice Live only if time
-- Demo video (<2 min) + README pitch + submit
+### Day 2 (Oct 26) — the vision build + cloud + polish + submit
+Frontend rebuilt around [docs/design-vision.md](docs/design-vision.md) v2 — *the pitch is
+the blackboard*, and the demo is a forensic film, "The Verdict":
+1. SSE stream + replay clock + rewind/freeze/failure-injection controls
+2. Pitch SVG + chalk telestration + Evidence Spotlight
+3. Boids swarm (~40–80 particles, flocking + quorum hardening)
+4. Pitch-control glow + momentum/xG charts
+5. Ticker band + score bug + lens switching
+6. Failure/recovery choreography · 7. Recap as annotated board · 8. On-air seed regeneration
+
+Cloud: API to ACA; agents to Foundry hosted agents; Event Hubs; Foundry IQ; tracing/ACS.
+Then demo video (<2 min, scripted) + README pitch + submit.
 
 ### Cut if time short (in order)
 1. Voice Live
-2. Memory/personalization (keep prefs toggle)
+2. Memory/personalization (keep lens toggle)
 3. Foundry IQ RAG (in-memory snippets)
-4. Event Hubs (polling)
+4. Event Hubs (SSE replay from API)
 5. Recap agent (on demand)
+6. Swarm degrades to simple particle convergence (chalk never cut)
 
 ### Never cut
-- Synthetic data + 4 agents with distinct roles
-- Evidence citations (explainability is the core ask)
-- Failure recovery demo
+- Synthetic data + 4 agents with distinct roles (Numbers/Chalk/Booth/Pitch presentation)
+- Evidence citations via the Evidence Spotlight (explainability is the core ask)
+- Failure recovery demo (emergent, rehearsed)
 - Frontend (balanced FE/BE)
-- Demo video
+- Demo video ("The Verdict")
 
 ## Project structure
 
@@ -142,22 +160,23 @@ panna/
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── docs/
-│   ├── strategy.md      # Revised build plan
-│   └── critique.md      # Research-backed tech-stack critique
+│   ├── strategy.md       # Revised build plan
+│   ├── critique.md       # Research-backed tech-stack critique
+│   └── design-vision.md  # v2: pitch-as-blackboard design language + "The Verdict" demo film
 ├── pyproject.toml
 ├── src/
-│   ├── events/          # Synthetic event generator
+│   ├── events/           # Synthetic event generator
 │   ├── agents/
-│   │   ├── scout.py     # Event detection + key moment flagging
-│   │   ├── analyst.py   # Tactical insights with evidence citations
-│   │   ├── commentator.py # Timed broadcast commentary
-│   │   ├── director.py  # A2A orchestration + failure recovery
-│   │   └── recap.py     # Post-match recap (Day 2)
-│   ├── foundry/         # Foundry hosted agents, Toolboxes, IQ, Memory
-│   ├── azure/           # ACA, Functions, Event Hubs, deployment config
-│   ├── models/          # xG, PPDA, formation, influence, momentum
-│   ├── api/             # FastAPI service
-│   └── frontend/        # Next.js dashboard
+│   │   ├── scout.py      # "Numbers" — event detection + key moment flagging
+│   │   ├── analyst.py    # "Chalk" — tactical insights with evidence citations
+│   │   ├── commentator.py # "Booth" — timed broadcast commentary
+│   │   ├── director.py   # coordination, failure recovery
+│   │   └── recap.py      # post-match recap (Day 2)
+│   ├── foundry/          # Foundry hosted agents, Toolboxes, IQ, Memory
+│   ├── azure/            # ACA, Functions, Event Hubs, deployment config
+│   ├── models/           # xG, PPDA, formation, influence, momentum
+│   ├── api/              # FastAPI service (incl. SSE replay stream)
+│   └── frontend/         # Next.js — pitch-as-blackboard interface
 └── ...
 ```
 

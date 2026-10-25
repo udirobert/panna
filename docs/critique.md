@@ -1,6 +1,12 @@
 # Panna — Tech-stack & build-plan critique (research-backed)
 
 > Research performed 2026-10-25 via Tavily. Sources cited inline. Submission deadline is **Oct 27, 2026 11:59 pm PT** — ~2 days from now, so this doc is written to be executable, not aspirational.
+>
+> **Note (2026-10-25, evening):** this doc is a research snapshot. `docs/design-vision.md`
+> (v2) supersedes all *frontend/presentation* statements here — notably "insight cards with
+> evidence chips" and "My Lens toggle", which became the pitch-as-blackboard visual language
+> (chalk telestration, boids swarm, Evidence Spotlight, lens switching). Backend/stack
+> findings below remain current.
 
 ## 1. What the hackathon actually rewards (from official rules)
 
