@@ -1,129 +1,315 @@
 "use client";
-import { useState } from "react";
-import { generateMatch, getInsights, getCommentary, getRecap } from "../lib/api";
 
-type Insight = { id: string; type: string; claim: string; value: any; confidence: number; evidence: string[] };
-type KM = { id: string; event_id: string; minute: number; type: string; importance: number; description: string; evidence: string[] };
-type CE = { minute: number; second: number; text: string; tone: string; insight_ids: string[] };
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AgentRail from "../components/AgentRail";
+import InsightStrips from "../components/InsightStrips";
+import MomentumChart from "../components/MomentumChart";
+import Pitch from "../components/Pitch";
+import ScoreBug from "../components/ScoreBug";
+import Swarm from "../components/Swarm";
+import Ticker from "../components/Ticker";
+import { generateMatch, playback } from "../lib/api";
+import { LENSES, type Lens, type Insight } from "../lib/types";
+import { useMatchStream } from "../lib/useMatchStream";
+
+const SPEEDS = [15, 30, 60, 120, 300];
 
 export default function Home() {
   const [matchId, setMatchId] = useState("match_001");
-  const [loading, setLoading] = useState(false);
-  const [eventsCount, setEventsCount] = useState(0);
-  const [keyMoments, setKeyMoments] = useState<KM[]>([]);
-  const [insights, setInsights] = useState<Insight[]>([]);
-  const [commentary, setCommentary] = useState<CE[]>([]);
-  const [recap, setRecap] = useState("");
-  const [health, setHealth] = useState<any>(null);
-  const [highlighted, setHighlighted] = useState<string | null>(null);
-  const [lens, setLens] = useState<"all" | "tactics" | "attack">("all");
+  const [seed, setSeed] = useState(42);
+  const [active, setActive] = useState(false); // stream connected
+  const [lens, setLens] = useState<Lens>("all");
+  const [spotlightId, setSpotlightId] = useState<string | null>(null);
+  const [resetArmed, setResetArmed] = useState(false);
+  const [goalKey, setGoalKey] = useState(0);
+  const lastGoalRef = useRef<string | null>(null);
 
-  async function run() {
-    setLoading(true);
-    try {
-      const g = await generateMatch(matchId, 42);
-      setEventsCount(g.event_count);
-      const ins = await getInsights(matchId);
-      setKeyMoments(ins.key_moments);
-      setInsights(ins.insights);
-      const com = await getCommentary(matchId);
-      setCommentary(com.commentary || []);
-      setHealth(com.health);
-      const rec = await getRecap(matchId);
-      setRecap(rec.recap);
-    } finally {
-      setLoading(false);
+  const s = useMatchStream(active ? matchId : null, seed);
+
+  const start = useCallback(async (id: string, newSeed: number) => {
+    setResetArmed(false);
+    const g = await generateMatch(id, newSeed);
+    if (g.event_count > 0) {
+      setSeed(newSeed);
+      setActive(true);
     }
-  }
+  }, []);
 
-  const filteredInsights = insights.filter((i) => {
-    if (lens === "tactics") return i.type.includes("formation") || i.type.includes("pressing");
-    if (lens === "attack") return i.type.includes("xg") || i.type.includes("momentum") || i.type.includes("player_influence");
-    return true;
-  });
+  const arm = useCallback(async () => {
+    if (!resetArmed) {
+      setResetArmed(true);
+      return;
+    }
+    const newSeed = Math.floor(Math.random() * 1000); // seed regenerated on air
+    const newId = `match_${newSeed}`;
+    setMatchId(newId);
+    setSpotlightId(null);
+    setLens("all");
+    await start(newId, newSeed);
+  }, [resetArmed, start]);
+
+  // goal burst trigger
+  useEffect(() => {
+    const g = s.lastGoal;
+    if (g && lastGoalRef.current !== `${g.minute}-${g.player}`) {
+      lastGoalRef.current = `${g.minute}-${g.player}`;
+      setGoalKey((k) => k + 1);
+    }
+  }, [s.lastGoal]);
+
+  const spotlight: { insight: Insight; events: any[] } | null = useMemo(() => {
+    if (!spotlightId) return null;
+    const insight = s.insights.find((i) => i.id === spotlightId);
+    if (!insight) return null;
+    const events = insight.evidence.map((id) => s.eventById[id]).filter(Boolean);
+    if (events.length === 0) return null;
+    return { insight, events };
+  }, [spotlightId, s.insights, s.eventById]);
+
+  const failToggle = useCallback(
+    (agent: string, failed: boolean) => {
+      if (active) void playback(matchId, { action: failed ? "fail" : "recover", agent });
+    },
+    [active, matchId],
+  );
+
+  const playToggle = () => {
+    if (!active) return void start(matchId, seed);
+    void playback(matchId, { action: s.playing ? "pause" : "play" });
+  };
+
+  const goalBurst = s.lastGoal
+    ? { x: s.lastGoal.x, y: s.lastGoal.y, team: s.lastGoal.team, key: goalKey }
+    : null;
 
   return (
     <div className="container">
-      <h1>Panna — Match Intelligence</h1>
-      <p className="muted">Synthetic football → explainable insights, live commentary, recap, personalized lens.</p>
-
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-        <input value={matchId} onChange={(e) => setMatchId(e.target.value)} style={{ padding: 8, borderRadius: 8, border: "1px solid #30363d", background: "#161b22", color: "#e6edf3" }} />
-        <button className="btn" onClick={run} disabled={loading}>{loading ? "Running…" : "Generate & Analyze"}</button>
-        {eventsCount > 0 && <span className="muted">{eventsCount} events processed</span>}
-        <span className="muted">Lens:</span>
-        {(["all", "tactics", "attack"] as const).map((l) => (
-          <button key={l} onClick={() => setLens(l)} style={{ background: lens === l ? "#1f6feb" : "#161b22", color: "#e6edf3", border: "1px solid #30363d", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>{l}</button>
-        ))}
-      </div>
-
-      {health && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Agent Health</h2>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {Object.values(health).map((h: any) => (
-              <span key={h.agent} style={{ padding: "4px 10px", borderRadius: 8, background: h.status === "healthy" ? "#23863633" : "#f8514933", border: `1px solid ${h.status === "healthy" ? "#238636" : "#f85149"}` }}>
-                {h.agent}: {h.status}
-              </span>
-            ))}
+      {/* top chrome: wordmark + score bug + controls */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 14,
+        }}
+      >
+        <div>
+          <div className="display" style={{ fontSize: 26, fontWeight: 900, letterSpacing: "0.18em" }}>
+            PANNA
+          </div>
+          <div className="muted" style={{ letterSpacing: "0.08em" }}>
+            MATCH INTELLIGENCE THAT EXPLAINS ITSELF · SEED {seed}
           </div>
         </div>
-      )}
 
-      <div className="grid">
-        <div className="card">
-          <h2>Insights ({filteredInsights.length})</h2>
-          {filteredInsights.map((i) => (
-            <div key={i.id} className="entry">
-              <div style={{ fontWeight: 600 }}>{i.claim}</div>
-              <div className="muted">type={i.type} · conf={i.confidence} · value={i.value}</div>
-              <div style={{ marginTop: 4 }}>
-                {i.evidence.map((e) => (
-                  <span key={e} className="chip" onClick={() => setHighlighted(e)} title="source event">{e}</span>
+        {active && s.snapshot && (
+          <ScoreBug
+            home={s.snapshot.home_team}
+            away={s.snapshot.away_team}
+            score={s.score}
+            minute={s.minute}
+            second={s.second}
+            playing={s.playing}
+            fullTime={s.minute >= 90 && !s.playing}
+          />
+        )}
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button className={`btn ${!active || s.playing ? "btn-primary" : ""}`} onClick={playToggle}>
+            {!active ? "▶ GENERATE & KICK OFF" : s.playing ? "❚❚ FREEZE" : "▶ PLAY"}
+          </button>
+          {active && (
+            <button
+              className="btn"
+              onClick={() => void playback(matchId, { action: "seek", at: (s.minute + 1) * 60 })}
+              title="jump +1 minute"
+            >
+              ⏭
+            </button>
+          )}
+          {active && (
+            <button
+              className="btn"
+              onClick={() => void playback(matchId, { action: "seek", at: Math.max(0, s.clock - 60) })}
+              title="rewind 1 match-minute (chalk un-draws)"
+            >
+              ⏪
+            </button>
+          )}
+          {active && (
+            <select
+              value={s.speed}
+              onChange={(e) => void playback(matchId, { action: "speed", speed: Number(e.target.value) })}
+              style={{
+                background: "rgba(8,16,12,0.9)",
+                color: "#e8f2ec",
+                border: "1px solid rgba(235,250,240,0.25)",
+                borderRadius: 6,
+                padding: "7px 8px",
+                fontSize: 13,
+              }}
+            >
+              {SPEEDS.map((sp) => (
+                <option key={sp} value={sp}>
+                  {sp}×
+                </option>
+              ))}
+            </select>
+          )}
+          <button className="btn" onClick={arm}>
+            {resetArmed ? "⟳ CONFIRM" : "⟳ NEW FIXTURE"}
+          </button>
+        </div>
+      </div>
+
+      {!active ? (
+        <div
+          style={{
+            border: "1px dashed rgba(235,250,240,0.25)",
+            borderRadius: 8,
+            padding: "90px 24px",
+            textAlign: "center",
+          }}
+        >
+          <div className="display" style={{ fontSize: 20, letterSpacing: "0.16em", color: "var(--gold)" }}>
+            EVERY MATCH LEAVES A VERDICT.
+          </div>
+          <div className="muted" style={{ marginTop: 8 }}>
+            Cross-examine yours — every match is generated on demand, seed {seed}.
+          </div>
+          <div style={{ marginTop: 22 }}>
+            <button className="btn btn-primary" style={{ fontSize: 15, padding: "12px 26px" }} onClick={playToggle}>
+              ▶ GENERATE & KICK OFF
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14 }}>
+          {/* left: the board */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
+            <div
+              style={{
+                position: "relative",
+                border: "1px solid rgba(235,250,240,0.12)",
+                borderRadius: 8,
+                overflow: "hidden",
+              }}
+            >
+              <Pitch
+                events={s.recentEvents}
+                detections={s.detections}
+                lens={lens}
+                spotlight={spotlight}
+                goalBurst={goalBurst}
+                failedAgents={s.failed}
+              />
+              <Swarm
+                events={s.recentEvents}
+                detections={s.detections}
+                clock={s.clock}
+                failedAgents={s.failed}
+                lens={lens}
+                spotlightActive={spotlight !== null}
+              />
+              {s.lastGoal && Date.now() < s.goalFlashUntil && (
+                <div className="goal-flash-overlay" key={goalKey} />
+              )}
+              {/* lens switcher as camera angles */}
+              <div style={{ position: "absolute", top: 10, left: 12, display: "flex", gap: 6 }}>
+                {LENSES.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setLens(l.id)}
+                    className="display"
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: "0.16em",
+                      padding: "4px 10px",
+                      borderRadius: 3,
+                      cursor: "pointer",
+                      border: "1px solid rgba(235,250,240,0.25)",
+                      background: lens === l.id ? "var(--gold)" : "rgba(8,16,12,0.85)",
+                      color: lens === l.id ? "#141003" : "#d9e8df",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {l.label}
+                  </button>
                 ))}
               </div>
+              {/* key-moment readout strip */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 10,
+                  left: 12,
+                  right: 12,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  pointerEvents: "none",
+                }}
+              >
+                <span className="muted display" style={{ letterSpacing: "0.14em" }}>
+                  {s.recentEvents.length} SIGNALS TRACED
+                </span>
+                {s.detections.length > 0 && (
+                  <span className="display" style={{ fontSize: 11, letterSpacing: "0.12em", color: "var(--gold)" }}>
+                    LAST DETECTION · {s.detections[s.detections.length - 1].description}
+                  </span>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="card">
-          <h2>Live Commentary</h2>
-          <div style={{ maxHeight: 420, overflow: "auto" }}>
-            {commentary.slice(0, 40).map((c, idx) => (
-              <div key={idx} className="entry">
-                <span className="muted">{c.minute}&apos; </span>
-                <span>{c.text}</span>
+            <MomentumChart points={s.momentum} lens={lens} />
+
+            <div style={{ position: "relative" }}>
+              <div
+                className="display"
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  color: "var(--muted)",
+                  marginBottom: 6,
+                }}
+              >
+                CHALK&apos;S BOARD — CLICK A FINDING TO SPOTLIGHT ITS EVIDENCE
               </div>
-            ))}
+              <InsightStrips
+                insights={s.insights}
+                lens={lens}
+                activeId={spotlightId}
+                onSelect={(ins) => setSpotlightId(ins ? ins.id : null)}
+              />
+            </div>
+
+            <Ticker items={s.commentary} />
           </div>
-        </div>
 
-        <div className="card">
-          <h2>Key Moments</h2>
-          <div style={{ maxHeight: 420, overflow: "auto" }}>
-            {keyMoments.map((km) => (
-              <div key={km.id} className="entry">
-                <span className="muted">{km.minute}&apos; </span>
-                <span style={{ fontWeight: 600 }}>{km.type}</span> — {km.description}
-                <span className="muted"> (imp {km.importance})</span>
-              </div>
-            ))}
+          {/* right rail: agent integrity */}
+          <div
+            style={{
+              border: "1px solid rgba(235,250,240,0.12)",
+              borderRadius: 8,
+              padding: 14,
+              alignSelf: "start",
+            }}
+          >
+            <AgentRail failed={s.failed} onToggleFail={failToggle} onReset={arm} resetArmed={resetArmed} />
           </div>
-        </div>
-
-        <div className="card">
-          <h2>Post-Match Recap</h2>
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", margin: 0 }}>{recap}</pre>
-        </div>
-      </div>
-
-      {highlighted && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h2>Highlighted Source Event</h2>
-          <p className="muted">Event id: {highlighted} — see /events/{matchId} for full payload.</p>
-          <button className="btn" onClick={() => setHighlighted(null)}>Clear</button>
         </div>
       )}
+
+      <div className="muted" style={{ marginTop: 18, display: "flex", justifyContent: "space-between" }}>
+        <span>
+          Synthetic, football-realistic data only · generated on demand (seed {seed}) · no real
+          Premier League data redistributed.
+        </span>
+        <span className="display" style={{ letterSpacing: "0.14em" }}>
+          MICROSOFT FOUNDRY · MAF · AZURE
+        </span>
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ degraded and flushed on recovery with ``recovered: true`` — stigmergy on scree
 
 from __future__ import annotations
 
+import itertools
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -121,6 +122,8 @@ def _build_timeline(events: list[Event], result: dict[str, Any]) -> list[Item]:
                         "home_score": home,
                         "away_score": away,
                         "xg": e.metadata.get("xg"),
+                        "x": e.position.x,
+                        "y": e.position.y,
                     },
                 )
             )
@@ -247,6 +250,7 @@ class MatchSession:
                     "second": int(self.clock % 60),
                     "speed": self.speed,
                     "playing": self.playing,
+                    "failed": sorted(self.failed),
                 },
             )
         )
@@ -304,6 +308,7 @@ class MatchSession:
 # ---- session registry ------------------------------------------------------
 
 _SESSIONS: dict[str, MatchSession] = {}
+_EPOCHS = itertools.count(1)  # globally monotonic so clients always resync
 
 
 def get_or_create_session(
@@ -327,6 +332,7 @@ def get_or_create_session(
         events=events,
         result=result,
     )
+    session.epoch = next(_EPOCHS)
     _SESSIONS[match_id] = session
     return session
 
