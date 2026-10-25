@@ -38,8 +38,14 @@ function reducer(state: MatchState, a: Action): MatchState {
         home_danger: s.momentum.home_danger[i] ?? 0,
         away_danger: s.momentum.away_danger[i] ?? 0,
       }));
+      // snapshot re-sync also resyncs the board's event ledger up to the clock;
+      // a changed seed means a brand-new match — drop the old ledger entirely
+      const seedChanged = state.snapshot !== null && state.snapshot.seed !== s.seed;
+      const map: Record<string, EventFrame> = seedChanged ? {} : { ...state.eventById };
+      for (const e of s.events ?? []) map[e.id] = toEventFrame(e);
       return {
         ...state,
+        eventById: map,
         snapshot: s,
         clock: s.clock,
         minute: s.minute,
@@ -60,7 +66,7 @@ function reducer(state: MatchState, a: Action): MatchState {
       return { ...state, eventById: a.map };
     case "events": {
       const map = { ...state.eventById };
-      for (const e of a.batch) map[e.id] = e;
+      for (const e of a.batch) map[e.id] = toEventFrame(e);
       const recent = [...state.recentEvents, ...a.batch].slice(-140);
       return { ...state, eventById: map, recentEvents: recent };
     }
@@ -110,6 +116,26 @@ function parseData(line: string): any {
   }
 }
 
+// The REST ledger returns nested Pydantic dumps ({position:{x,y}, end_location:{x,y},
+// metadata:{xg}}); the SSE stream returns flat frames ({x,y,end_x,end_y,xg}).
+// Normalize both to EventFrame so the board always reads flat fields.
+export function toEventFrame(e: any): EventFrame {
+  return {
+    id: e.id,
+    type: e.type,
+    team: e.team,
+    player: e.player,
+    minute: e.minute,
+    second: e.second,
+    x: e.position?.x ?? e.x,
+    y: e.position?.y ?? e.y,
+    end_x: e.end_location?.x ?? e.end_x ?? null,
+    end_y: e.end_location?.y ?? e.end_y ?? null,
+    outcome: e.outcome ?? null,
+    xg: e.metadata?.xg ?? e.xg ?? null,
+  };
+}
+
 export function useMatchStream(matchId: string | null, seed: number) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const esRef = useRef<EventSource | null>(null);
@@ -125,7 +151,7 @@ export function useMatchStream(matchId: string | null, seed: number) {
         const r = await fetch(`${BASE}/events/${matchId}?limit=500&offset=${offset}`);
         const j = await r.json();
         if (cancelled) return;
-        for (const e of j.events) map[e.id] = e;
+        for (const e of j.events) map[e.id] = toEventFrame(e);
         offset += j.events.length;
         if (j.events.length === 0 || offset >= j.total) break;
       }

@@ -45,5 +45,5 @@ make frontend           # http://localhost:3000
 |---|---|
 | Match has no clean momentum swing | Regenerate with a different seed before recording (pre-flight step) |
 | A spotlight cites an event off-screen (pass out of view) | Pick a different insight strip; every insight's evidence is on-board by construction |
-| Recovery flush feels slow | Do the CHALK fail/recover cycle while paused — flush is instant on resume |
+| Recovery flush feels slow | Keep the match **playing** while CHALK is dark — buffered findings flush on recover (the clock must pass them). Do not fail/recover while frozen at full time. |
 | SSE drops (network hiccup) | The client resyncs automatically from the last snapshot; just keep playing |

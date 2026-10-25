@@ -22,8 +22,8 @@ export async function getRecap(matchId: string) {
   return r.json();
 }
 
-export function streamUrl(matchId: string) {
-  return `${BASE}/stream/${matchId}`;
+export function streamUrl(matchId: string, autoplay = true) {
+  return `${BASE}/stream/${matchId}${autoplay ? "?autoplay=1" : ""}`;
 }
 
 export type PlaybackAction =

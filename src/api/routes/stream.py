@@ -37,7 +37,7 @@ def _sse(kind: str, data: dict[str, Any]) -> str:
 
 
 @router.get("/{match_id}")
-async def stream(match_id: str, request: Request) -> StreamingResponse:
+async def stream(match_id: str, request: Request, autoplay: bool = False) -> StreamingResponse:
     if match_id not in _MATCHES:
         raise HTTPException(404, "match not found; POST /matches/generate first")
     cfg = _CONFIGS.get(match_id)
@@ -48,6 +48,10 @@ async def stream(match_id: str, request: Request) -> StreamingResponse:
         home_team=cfg.home_team if cfg else "Home FC",
         away_team=cfg.away_team if cfg else "Away United",
     )
+    if autoplay and session.autoplay_pending:
+        # first connection for this session kicks off the match
+        session.autoplay_pending = False
+        session.play()
 
     async def gen() -> Any:
         # re-sync on epoch changes (seek/reset from the controls)

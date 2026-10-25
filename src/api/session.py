@@ -148,6 +148,7 @@ class MatchSession:
     speed: float = 60.0  # match-seconds per real second (90 min match ≈ 90 s demo)
     playing: bool = False
     epoch: int = 0  # bumped on seek/reset; SSE clients re-snapshot
+    autoplay_pending: bool = True  # first stream connection starts playback
 
     # failure choreography
     failed: set[str] = field(default_factory=set)
@@ -276,8 +277,11 @@ class MatchSession:
         score = self._score()
         minute = int(self.clock // 60)
         revealed = {kind: [] for kind in ("detection", "insight", "commentary")}
-        for _at, kind, _, payload in self.timeline[: self._cursor]:
-            if kind in revealed:
+        events_so_far: list[dict] = []
+        for _at, kind, _owner, payload in self.timeline[: self._cursor]:
+            if kind == "event":
+                events_so_far.append(payload)
+            elif kind in revealed:
                 revealed[kind].append(payload)
         ms = self.momentum_series
         return {
@@ -292,6 +296,7 @@ class MatchSession:
             "score": score,
             "failed": sorted(self.failed),
             "health": self.result.get("health", {}),
+            "events": events_so_far,
             "key_moments": revealed["detection"],
             "insights": revealed["insight"],
             "commentary": revealed["commentary"],

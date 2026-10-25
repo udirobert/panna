@@ -79,6 +79,7 @@ export type Snapshot = {
   score: { home: number; away: number };
   failed: string[];
   health: Record<string, HealthEntry>;
+  events: EventFrame[];
   key_moments: Detection[];
   insights: Insight[];
   commentary: Commentary[];

@@ -53,8 +53,13 @@ def test_session_timeline_and_momentum():
     assert s.clock == 3000
     snap = s.snapshot()
     assert len(snap["momentum"]["home_cum"]) == snap["minute"] + 1
+    # snapshot carries the full event ledger up to the clock (board survives seeks)
+    assert len(snap["events"]) > 0
     s.seek(0)
     assert s.snapshot()["insights"] == []
+    # at clock 0 only the kickoff events (t=0) are on the board
+    zero = s.snapshot()["events"]
+    assert all(ev["minute"] == 0 and ev["second"] == 0 for ev in zero)
 
 
 def test_session_failure_and_recovery_flush():

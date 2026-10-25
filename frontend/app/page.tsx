@@ -86,6 +86,14 @@ export default function Home() {
     return { insight, events };
   }, [spotlightId, s.insights, s.eventById]);
 
+  // Board = clock-filtered event ledger (deterministic, survives any seek).
+  // SSE events are redundant for rendering; the ledger is ground truth.
+  const visibleEvents = useMemo(() => {
+    const all = Object.values(s.eventById);
+    if (all.length === 0) return [];
+    return all.filter((e) => e.minute * 60 + e.second <= s.clock);
+  }, [s.eventById, s.clock]);
+
   const failToggle = useCallback(
     (agent: string, failed: boolean) => {
       if (active) void playback(matchId, { action: failed ? "fail" : "recover", agent });
@@ -218,7 +226,7 @@ export default function Home() {
               }}
             >
               <Pitch
-                events={s.recentEvents}
+                events={visibleEvents}
                 detections={s.detections}
                 lens={lens}
                 spotlight={spotlight}
@@ -226,7 +234,7 @@ export default function Home() {
                 failedAgents={s.failed}
               />
               <Swarm
-                events={s.recentEvents}
+                events={visibleEvents}
                 detections={s.detections}
                 clock={s.clock}
                 failedAgents={s.failed}
@@ -272,7 +280,7 @@ export default function Home() {
                 }}
               >
                 <span className="muted display" style={{ letterSpacing: "0.14em" }}>
-                  {s.recentEvents.length} SIGNALS TRACED
+                  {visibleEvents.length} SIGNALS TRACED
                 </span>
                 {s.detections.length > 0 && (
                   <span className="display" style={{ fontSize: 11, letterSpacing: "0.12em", color: "var(--gold)" }}>
