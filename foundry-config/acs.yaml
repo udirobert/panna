@@ -1,0 +1,13 @@
+# Agent Control Specification (ACS) guardrails
+version: "1.0"
+checkpoints:
+  input:
+    - pii_filter: true
+    - jailbreak_protection: true
+  llm:
+    - task_adherence: true
+  tool:
+    - allow_list: ["foundry_iq", "toolbox"]
+  output:
+    - no_fabricated_events: true
+    - evidence_required: true

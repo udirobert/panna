@@ -53,3 +53,7 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Next.js
+frontend/.next/
+frontend/out/

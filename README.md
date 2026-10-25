@@ -68,13 +68,19 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
 3. **Best Use of Microsoft Foundry** — Foundry orchestrates the 4-agent pipeline
 4. **Best Azure Cloud Native Integration** — Azure Container Apps + Event Hubs + Functions
 
-### Microsoft tech stack
+### Microsoft tech stack (2026 hero tech — see docs/critique.md)
 
-- **Microsoft Foundry** — AI model deployment and agent orchestration
-- **Azure Container Apps** — serverless, event-driven compute
+- **Microsoft Agent Framework (MAF)** — Magentic-One multi-agent orchestration, A2A handoffs, shared state, failure recovery; integrates GitHub Copilot SDK
+- **Microsoft Foundry Agent Service** (GA) — hosted agents with sandboxed sessions, state, filesystem; Responses API + Invocations protocol
+- **Foundry Toolboxes (MCP)** — single governed endpoint for tools/skills/enterprise data
+- **Foundry IQ** (GA knowledge bases) + **Web IQ** — SLA-backed RAG replacing custom Azure AI Search plumbing
+- **Foundry Memory** (public preview) — procedural/user/session memory for personalization
+- **Enterprise controls** — Tracing (any framework), ASSERT evals, Agent Control Specification (ACS) guardrails, Guided Guardrails, Rubric
+- **Azure Container Apps** — FastAPI API (serverless, event-driven)
+- **Azure Functions** — serverless agents runtime (per-agent workers)
 - **Azure Event Hubs** — synthetic event stream ingestion
-- **Azure Functions** — serverless processing for individual agents
-- **Azure AI Search** — RAG for historical match context
+- **Models** — GPT-5.4 / GPT-5.4 Pro via Model Router (or MAI-Thinking-1); Voice Live optional
+- **Frontend** — Next.js live match dashboard
 - **GitHub Copilot** — development
 
 ### Synthetic data
@@ -101,25 +107,32 @@ Panna is built as a **separate project** for the hackathon. After judging, the f
 - Microsoft Foundry → replaces OpenAI/Anthropic with Azure OpenAI
 - Azure deployment → adds Azure as a deployment target alongside Vercel
 
-## 48-hour build plan
+## Build plan (compressed — see docs/strategy.md, deadline Oct 27 2026)
 
-### Day 1 (Oct 25–26)
-- Synthetic football event generator (passes, shots, tackles, possession, etc.)
-- Scout agent (event detection + key moment flagging)
-- Analyst agent (tactical insights with evidence citations)
-- Basic Commentator (natural language from Scout + Analyst output)
+### Day 1 (Oct 25) — core pipeline + frontend
+- Synthetic data generator (StatsBomb-like schema, seeded match) + real xG/PPDA/formation models
+- Scout + Analyst agents (MAF, Foundry GPT-5.4) with evidence citations
+- Commentator agent (timed broadcast NL) + Director (A2A orchestration, shared state, failure recovery)
+- Next.js frontend (live feed, insight cards with evidence, commentary panel); end-to-end local test
 
-### Day 2 (Oct 26–27)
-- Director agent (orchestration + failure recovery)
-- Microsoft Foundry integration (Azure OpenAI)
-- Azure Container Apps deployment
-- Demo video (2 min)
-- Submit
+### Day 2 (Oct 26) — cloud + polish + submit
+- Deploy API to ACA; agents to Foundry hosted agents; Event Hubs; Foundry IQ; tracing/ACS
+- Recap agent + "My Lens" personalization (Memory); Voice Live only if time
+- Demo video (<2 min) + README pitch + submit
 
-### Cut if time is short
-- Personalized fan experience (nice-to-have, not core)
-- 3D broadcast (SportWarren already has this)
-- Azure Event Hubs (use simpler polling if needed)
+### Cut if time short (in order)
+1. Voice Live
+2. Memory/personalization (keep prefs toggle)
+3. Foundry IQ RAG (in-memory snippets)
+4. Event Hubs (polling)
+5. Recap agent (on demand)
+
+### Never cut
+- Synthetic data + 4 agents with distinct roles
+- Evidence citations (explainability is the core ask)
+- Failure recovery demo
+- Frontend (balanced FE/BE)
+- Demo video
 
 ## Project structure
 
@@ -129,18 +142,44 @@ panna/
 ├── .gitignore
 ├── .pre-commit-config.yaml
 ├── docs/
-│   └── strategy.md
+│   ├── strategy.md      # Revised build plan
+│   └── critique.md      # Research-backed tech-stack critique
+├── pyproject.toml
 ├── src/
 │   ├── events/          # Synthetic event generator
 │   ├── agents/
 │   │   ├── scout.py     # Event detection + key moment flagging
-│   │   ├── analyst.py   # Tactical insights with evidence
-│   │   ├── commentator.py # Natural language commentary
-│   │   └── director.py  # Orchestration + failure recovery
-│   ├── foundry/         # Microsoft Foundry integration
-│   └── azure/           # Azure deployment config
+│   │   ├── analyst.py   # Tactical insights with evidence citations
+│   │   ├── commentator.py # Timed broadcast commentary
+│   │   ├── director.py  # A2A orchestration + failure recovery
+│   │   └── recap.py     # Post-match recap (Day 2)
+│   ├── foundry/         # Foundry hosted agents, Toolboxes, IQ, Memory
+│   ├── azure/           # ACA, Functions, Event Hubs, deployment config
+│   ├── models/          # xG, PPDA, formation, influence, momentum
+│   ├── api/             # FastAPI service
+│   └── frontend/        # Next.js dashboard
 └── ...
 ```
+
+## Running locally
+
+```bash
+# Backend (FastAPI)
+pip install fastapi uvicorn pydantic
+make backend          # http://localhost:8000  (docs at /docs)
+
+# Frontend (Next.js)
+cd frontend && npm install && npm run dev   # http://localhost:3000
+
+# Full pipeline CLI
+make run-pipeline
+
+# Tests / lint
+make test
+make lint
+```
+
+Environment variables (see `.env.example`): `FOUNDRY_ENDPOINT`, `FOUNDRY_API_KEY`, `FOUNDRY_DEPLOYMENT`.
 
 ## Links
 

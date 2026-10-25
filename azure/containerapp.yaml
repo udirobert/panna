@@ -1,0 +1,14 @@
+# Azure Container Apps deployment for Panna API
+name: panna-api
+image: panna-api:latest
+targetPort: 8000
+env:
+  - name: FOUNDRY_ENDPOINT
+    secretRef: foundry-endpoint
+  - name: FOUNDRY_DEPLOYMENT
+    value: gpt-5.4
+  - name: FOUNDRY_API_KEY
+    secretRef: foundry-api-key
+ingress:
+  external: true
+  targetPort: 8000
