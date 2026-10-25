@@ -7,6 +7,7 @@ from src.events.generator import MatchConfig, SyntheticMatchGenerator
 router = APIRouter()
 
 _MATCHES: dict[str, list] = {}
+_CONFIGS: dict[str, MatchConfig] = {}
 
 
 @router.post("/generate")
@@ -15,6 +16,7 @@ def generate(match_id: str = "match_001", seed: int = 42) -> dict:
     gen = SyntheticMatchGenerator(cfg)
     events = gen.generate()
     _MATCHES[match_id] = events
+    _CONFIGS[match_id] = cfg
     return {"match_id": match_id, "event_count": len(events)}
 
 
