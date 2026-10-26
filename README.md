@@ -101,15 +101,15 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
   (instructions, toolbox, memory, tracing, guardrails) in
   `foundry-config/booth-agent.yaml`.
 
-**Deliberately cut from scope (honest, not hidden):**
-- A2A handoffs, Magentic-One, Event Hubs, Functions, Foundry IQ, Memory —
-  the pipeline is a shared-state blackboard (stigmergy) by design, and the
-  transport is SSE, not Event Hubs. These were on the Day-1 stack and were
-  cut for depth; they are **not** claimed here.
+**Elsewhere in the stack:** GPT-5.4 via Azure OpenAI (Model Router) ·
+Next.js frontend (the pitch *is* the interface) · GitHub Copilot for
+development.
 
-- **Models** — GPT-5.4 via Azure OpenAI (Model Router)
-- **Frontend** — Next.js: the pitch *is* the interface (chalk telestration, boids swarm, pitch-control glow, Ceefax-style ticker, lens switching)
-- **GitHub Copilot** — development
+**Deliberately cut from scope (honest, not hidden):** A2A handoffs,
+Magentic-One, Event Hubs, Azure Functions, Foundry IQ, Foundry Memory. The
+pipeline is a shared-state blackboard (stigmergy) by design, and the
+transport is SSE, not Event Hubs. These were on the Day-1 stack and were
+cut for depth; they are **not** claimed here.
 
 ### Synthetic data
 
@@ -127,6 +127,60 @@ Every insight comes with evidence citations — which events led to this conclus
 On screen, evidence is shown as an **Evidence Spotlight**: the pitch dims, cited
 events glow gold, and chalk lines draw themselves from the claim to its sources.
 This is what makes it "explainable match intelligence" — the hackathon's core ask.
+
+### Interoperability
+
+The platform is built so the match can be consumed outside the Panna frontend:
+
+- **One canonical event frame.** REST (`GET /events/{id}`), the SSE stream, and
+  the MCP server all emit the same flat StatsBomb-like frame
+  (`id, type, team, minute, x, y, end_x, end_y, outcome, xg`). No client-side
+  shape reconciliation.
+- **Seed-deterministic matches.** Any consumer can regenerate any match from
+  `match_<seed>` — the match is addressable without our server.
+- **MCP server.** The match is exposed as a queryable toolkit over the
+  **Model Context Protocol**, so any MCP client (Copilot, Claude Desktop, a
+  custom agent) can pull a match by seed and verify its evidence:
+  `match_info`, `match_events`, `team_summary`, `match_insights`,
+  `event_details`.
+  ```bash
+  panna-mcp                 # run the MCP server (stdio transport)
+  ```
+- **Self-contained artifacts.** `/share/{id}` returns a standalone HTML
+  case file (no external assets) that opens from a plain file.
+- **Open transport.** CORS is open and the API is a standard FastAPI service
+  with a Dockerfile; the image runs on any container host, not just Azure.
+
+### Accessibility
+
+The pitch is designed to be understood without color or motion:
+
+- **Shape, not just color.** Teams are encoded by shape as well as hue — Home
+  is solid lines with filled shot rings, Away is dashed lines with open rings
+  (WCAG 1.4.1). A visible legend states the mapping.
+- **Text alternatives for the board.** The pitch SVG carries a `role="img"`
+  title + description; the momentum chart is labeled; the score bug announces
+  score, minute, and state.
+- **Live updates for screen readers.** Goals and score changes are announced
+  via an `aria-live` region; the swarm canvas is `aria-hidden` (decorative).
+- **Reduced motion.** `prefers-reduced-motion` disables chalk draws, pulses,
+  ticker, and goal flashes.
+- **Keyboard + focus.** All controls are focusable with a visible
+  `:focus-visible` outline; insight strips are keyboard-operable.
+- **Responsive.** The board and verdict collapse to a single column under
+  900px.
+
+### Known constraints (honest)
+
+- **State is in-memory, single-replica.** Matches, sessions, and traces live
+  in process memory. Scale ACA to >1 replica and a `/generate` on one instance
+  isn't visible to a `/stream` on another (seed-determinism covers match
+  data; playback clock/session state is not yet shareable).
+- **No authentication; CORS is open.** Appropriate for a hackathon, not for
+  enterprise — noted, not hidden.
+- **No Foundry in this dev environment.** The Foundry/MAF live path is fully
+  implemented and tested (including a dead-endpoint fallback test), but runs
+  on the deterministic path here.
 
 ## Relationship to SportWarren
 
@@ -182,25 +236,33 @@ panna/
 ├── README.md
 ├── .gitignore
 ├── .pre-commit-config.yaml
-├── docs/
-│   ├── strategy.md       # Revised build plan
-│   ├── critique.md       # Research-backed tech-stack critique
-│   └── design-vision.md  # v2: pitch-as-blackboard design language + "The Verdict" demo film
 ├── pyproject.toml
+├── Dockerfile            # ACA image
+├── docs/
+│   ├── strategy.md       # Build plan
+│   ├── critique.md       # Research-backed tech-stack critique
+│   ├── design-vision.md  # v2: pitch-as-blackboard design language + "The Verdict" demo film
+│   └── demo-runbook.md   # Frame-by-frame demo choreography
+├── azure/
+│   ├── panna-aca.bicep   # Self-contained ACA (httpConcurrency, probe, @secure() secret)
+│   └── deploy.sh         # build → ACR → deploy → endpoint
+├── foundry-config/
+│   └── booth-agent.yaml  # Booth staged as a Foundry hosted agent
 ├── src/
-│   ├── events/           # Synthetic event generator
+│   ├── events/           # Synthetic generator + canonical event frame
 │   ├── agents/
 │   │   ├── scout.py      # "Numbers" — event detection + key moment flagging
-│   │   ├── analyst.py    # "Chalk" — tactical insights with evidence citations
+│   │   ├── analyst.py    # "Chalk" — deterministic tactical insights (evidence-cited)
 │   │   ├── commentator.py # "Booth" — timed broadcast commentary
-│   │   ├── director.py   # coordination, failure recovery
-│   │   └── recap.py      # post-match recap (Day 2)
-│   ├── foundry/          # Foundry client + MAF reasoning loop (Chalk), tracing, narrative agents
-│   ├── azure/            # ACA Bicep + one-command deploy script
+│   │   ├── director.py   # shared-state blackboard, failure recovery
+│   │   └── recap.py      # post-match recap
+│   ├── foundry/          # Foundry client, MAF reasoning loop, narrative, tracing
 │   ├── models/           # xG, PPDA, formation, influence, momentum
-│   ├── api/              # FastAPI service (incl. SSE replay stream)
-│   └── frontend/         # Next.js — pitch-as-blackboard interface
-└── ...
+│   ├── api/              # FastAPI (REST, SSE replay, playback, share)
+│   ├── mcp_server.py     # MCP server — the match toolkit for any MCP client
+│   └── cli.py
+├── frontend/             # Next.js — the pitch-as-blackboard interface
+└── tests/                # pytest: pipeline, stream, agentic, MAF, MCP, share
 ```
 
 ## Running locally

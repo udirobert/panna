@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.agents.director import DirectorAgent
+from src.events.frames import event_frame
 from src.events.schema import Event, Team
 
 MATCH_SECONDS = 90 * 60  # replay window ends at full time (90')
@@ -68,20 +69,7 @@ def _build_timeline(events: list[Event], result: dict[str, Any]) -> list[Item]:
                 float(e.timestamp_seconds),
                 "event",
                 "",
-                {
-                    "id": e.id,
-                    "type": e.type.value,
-                    "team": e.team.value,
-                    "player": e.player,
-                    "minute": e.minute,
-                    "second": e.second,
-                    "x": e.position.x,
-                    "y": e.position.y,
-                    "end_x": e.end_location.x if e.end_location else None,
-                    "end_y": e.end_location.y if e.end_location else None,
-                    "outcome": e.outcome,
-                    "xg": e.metadata.get("xg"),
-                },
+                event_frame(e),
             )
         )
 
