@@ -27,10 +27,15 @@ export default function MomentumChart({ points, lens }: { points: MomentumPoint[
 
   return (
     <div style={{ position: "relative" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={`Match momentum. Home danger above the line, away below. Cumulative xG: home ${xgHome.toFixed(2)}, away ${xgAway.toFixed(2)}.`}
+        style={{ width: "100%", display: "block" }}
+      >
         <line x1={0} y1={mid} x2={W} y2={mid} stroke="rgba(235,250,240,0.14)" strokeWidth={0.5} />
         <path d={path("home_danger", -1)} fill="rgba(56,189,248,0.32)" stroke="var(--home)" strokeWidth={0.6} />
-        <path d={path("away_danger", 1)} fill="rgba(245,158,11,0.30)" stroke="var(--away)" strokeWidth={0.6} />
+        <path d={path("away_danger", 1)} fill="rgba(245,158,11,0.30)" stroke="var(--away)" strokeWidth={0.6} strokeDasharray="3 2" />
         {/* now cursor */}
         {points.length > 0 && (
           <line

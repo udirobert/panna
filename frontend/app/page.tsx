@@ -29,10 +29,13 @@ export default function Home() {
   const [recapData, setRecapData] = useState<RecapStructured | null>(null);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [booting, setBooting] = useState(false);
+  const [liveMsg, setLiveMsg] = useState<string>("");
   const lastGoalRef = useRef<string | null>(null);
   const bootedRef = useRef(false);
 
   const s = useMatchStream(active ? matchId : null, seed);
+  const homeName = s.snapshot?.home_team ?? "Home";
+  const awayName = s.snapshot?.away_team ?? "Away";
 
   const start = useCallback(async (id: string, newSeed: number) => {
     setResetArmed(false);
@@ -108,14 +111,17 @@ export default function Home() {
     await start(newId, newSeed);
   }, [resetArmed, start]);
 
-  // goal burst trigger
+  // goal burst trigger + screen-reader announcement
   useEffect(() => {
     const g = s.lastGoal;
     if (g && lastGoalRef.current !== `${g.minute}-${g.player}`) {
       lastGoalRef.current = `${g.minute}-${g.player}`;
       setGoalKey((k) => k + 1);
+      setLiveMsg(
+        `Goal at ${g.minute} minutes — ${g.team === "Home" ? homeName : awayName} ${g.player}. Score ${g.home_score} to ${g.away_score}.`,
+      );
     }
-  }, [s.lastGoal]);
+  }, [s.lastGoal, homeName, awayName]);
 
   // full time → pull the case (recap) once
   const fullTime = active && s.minute >= 90 && !s.playing;
@@ -181,6 +187,11 @@ export default function Home() {
 
   return (
     <div className="container">
+      {/* screen-reader live region: announces goals and score changes */}
+      <div aria-live="assertive" role="status" className="visually-hidden">
+        {liveMsg}
+      </div>
+
       {/* engine error state (visible, not silent) */}
       {engineError && (
         <div
@@ -321,7 +332,7 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14 }}>
+        <div className="board-grid">
           {/* left: the board */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
             <div
@@ -339,6 +350,8 @@ export default function Home() {
                 spotlight={spotlight}
                 goalBurst={goalBurst}
                 failedAgents={s.failed}
+                score={s.score}
+                minute={s.minute}
               />
               <Swarm
                 events={visibleEvents}
@@ -384,6 +397,7 @@ export default function Home() {
                   display: "flex",
                   justifyContent: "space-between",
                   pointerEvents: "none",
+                  gap: 12,
                 }}
               >
                 <span className="muted display" style={{ letterSpacing: "0.14em" }}>
@@ -398,6 +412,19 @@ export default function Home() {
             </div>
 
             <MomentumChart points={s.momentum} lens={lens} />
+            <div
+              className="muted display"
+              style={{ fontSize: 10, letterSpacing: "0.12em", display: "flex", gap: 14 }}
+            >
+              <span>
+                <span style={{ color: "var(--home)" }}>●</span> {homeName.toUpperCase()} — SOLID
+                LINES · FILLED SHOTS
+              </span>
+              <span>
+                <span style={{ color: "var(--away)" }}>○</span> {awayName.toUpperCase()} — DASHED
+                LINES · OPEN SHOTS
+              </span>
+            </div>
 
             <div style={{ position: "relative" }}>
               <div

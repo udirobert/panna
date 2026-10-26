@@ -15,6 +15,8 @@ type Props = {
   spotlight: { insight: Insight; events: EventFrame[] } | null;
   goalBurst: { x: number; y: number; team: string; key: number } | null;
   failedAgents: string[];
+  score?: { home: number; away: number };
+  minute?: number;
 };
 
 function teamColor(team: string, alpha: number) {
@@ -59,6 +61,8 @@ export default function Pitch({
   spotlight,
   goalBurst,
   failedAgents,
+  score,
+  minute,
 }: Props) {
   const control = useControlField(events);
   const showControl = lens === "tactics";
@@ -69,11 +73,25 @@ export default function Pitch({
   const shots = events.filter((e) => e.type === "shot" || e.type === "goal");
   const spotIds = new Set((spotlight?.events ?? []).map((e) => e.id));
 
+  // Shape encodes team so the board never relies on color alone (WCAG 1.4.1):
+  //   Home — solid lines, filled shot rings
+  //   Away — dashed lines, open shot rings
+  const dashFor = (team: string) => (team === "Home" ? undefined : "1.5 1.1");
+
+  const homeShots = events.filter((e) => e.team === "Home" && (e.type === "shot" || e.type === "goal")).length;
+  const awayShots = events.filter((e) => e.team === "Away" && (e.type === "shot" || e.type === "goal")).length;
+  const desc = spotlight
+    ? `Evidence spotlight: ${spotlight.insight.claim} — ${spotlight.events.length} cited events highlighted in gold.`
+    : `Live pitch at ${minute ?? 0} minutes. ${score ? `Score home ${score.home}, away ${score.away}. ` : ""}` +
+      `${events.length} events played; ${homeShots} home shots (solid lines, filled rings) and ${awayShots} away shots (dashed lines, open rings).`;
+
   return (
     <div style={{ position: "relative", width: "100%" }}>
       {goalBurst && <GoalBurst x={goalBurst.x} y={goalBurst.y} team={goalBurst.team} key={goalBurst.key} />}
       <svg
         viewBox={`-4 -4 ${W + 8} ${H + 8}`}
+        role="img"
+        aria-labelledby="pitch-title pitch-desc"
         style={{
           width: "100%",
           display: "block",
@@ -81,6 +99,10 @@ export default function Pitch({
           transition: "filter 400ms ease",
         }}
       >
+        <title id="pitch-title">
+          Panna live pitch{score ? ` — home ${score.home}, away ${score.away}` : ""}
+        </title>
+        <desc id="pitch-desc">{desc}</desc>
         {/* surface */}
         <defs>
           <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
@@ -145,6 +167,7 @@ export default function Pitch({
               y2={e.end_y}
               stroke={teamColor(e.team, e.outcome === "success" ? 0.2 : 0.42)}
               strokeWidth={0.3}
+              strokeDasharray={dashFor(e.team)}
               className={e.outcome === "success" ? undefined : "chalk-path"}
               style={
                 e.outcome === "success"
@@ -154,12 +177,13 @@ export default function Pitch({
             />
           ))}
 
-        {/* shot rings */}
+        {/* shot rings — filled = Home, open = Away (shape, not just color) */}
         {showShots &&
           !dimForSpotlight &&
           shots.map((e) => {
             const r = 0.9 + (e.xg ?? 0.1) * 3.4;
             const goal = e.type === "goal";
+            const homeTeam = e.team === "Home";
             return (
               <g key={e.id}>
                 {goal && (
@@ -169,9 +193,10 @@ export default function Pitch({
                   cx={e.x}
                   cy={e.y}
                   r={r}
-                  fill={goal ? "var(--gold)" : teamColor(e.team, 0.28)}
+                  fill={goal ? "var(--gold)" : homeTeam ? teamColor(e.team, 0.55) : "none"}
                   stroke={goal ? "var(--gold)" : teamColor(e.team, 0.85)}
                   strokeWidth={0.28}
+                  strokeDasharray={goal ? undefined : homeTeam ? undefined : "0.8 0.6"}
                 />
               </g>
             );

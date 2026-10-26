@@ -13,8 +13,10 @@ type Props = {
 export default function ScoreBug({ home, away, score, minute, second, playing, fullTime }: Props) {
   const mm = String(minute).padStart(2, "0");
   const ss = String(second).padStart(2, "0");
+  const state = fullTime ? "full time" : playing ? "live" : "paused";
+  const label = `${home} ${score.home}, ${away} ${score.away}, ${fullTime ? "full time" : `${minute} minutes`}, ${state}.`;
   return (
-    <div className="scorebug display">
+    <div className="scorebug display" role="status" aria-label={label}>
       <div className="seg" style={{ borderLeft: "3px solid var(--home)" }}>
         <span className="team" style={{ color: "var(--home)" }}>
           {home.toUpperCase()}

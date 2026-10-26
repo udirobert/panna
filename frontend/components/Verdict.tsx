@@ -78,14 +78,7 @@ export default function Verdict({
         </span>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)",
-          gap: 24,
-          marginTop: 12,
-        }}
-      >
+      <div className="verdict-grid" style={{ marginTop: 12 }}>
         {/* left: headline, story, exhibits */}
         <div style={{ minWidth: 0 }}>
           <div className="display" style={{ fontSize: 22, fontWeight: 900, letterSpacing: "0.06em" }}>

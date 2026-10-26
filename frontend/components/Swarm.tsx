@@ -170,10 +170,18 @@ export default function Swarm({
         const rgb = b.hue === "home" ? HOME : AWAY;
         const spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
         const a = (0.25 + Math.min(0.6, spd / 18)) * alphaMul;
+        // shape encodes team (WCAG 1.4.1): Home = filled dot, Away = open ring
         ctx.beginPath();
-        ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
-        ctx.arc(b.x * px, b.y * py, 1.6 * window.devicePixelRatio, 0, Math.PI * 2);
-        ctx.fill();
+        if (b.hue === "home") {
+          ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+          ctx.arc(b.x * px, b.y * py, 1.6 * window.devicePixelRatio, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+          ctx.lineWidth = 0.8 * window.devicePixelRatio;
+          ctx.arc(b.x * px, b.y * py, 1.7 * window.devicePixelRatio, 0, Math.PI * 2);
+          ctx.stroke();
+        }
         // motion trail
         ctx.beginPath();
         ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a * 0.35})`;
@@ -194,6 +202,7 @@ export default function Swarm({
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       style={{
         position: "absolute",
         inset: 0,
