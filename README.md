@@ -148,8 +148,10 @@ The platform is built so the match can be consumed outside the Panna frontend:
   ```
 - **Self-contained artifacts.** `/share/{id}` returns a standalone HTML
   case file (no external assets) that opens from a plain file.
-- **Open transport.** CORS is open and the API is a standard FastAPI service
-  with a Dockerfile; the image runs on any container host, not just Azure.
+- **Open transport.** CORS is open. Both halves are containers with
+  Dockerfiles (API and `frontend/`), so the whole product runs on any container
+  host, not just Azure — a reverse proxy pointing a domain at the two containers
+  is all it takes to go live.
 
 ### Accessibility
 
@@ -178,6 +180,10 @@ The pitch is designed to be understood without color or motion:
   data; playback clock/session state is not yet shareable).
 - **No authentication; CORS is open.** Appropriate for a hackathon, not for
   enterprise — noted, not hidden.
+- **The frontend's API base is a build-time variable** (`NEXT_PUBLIC_API_URL`).
+  Set it to `/api` and the same domain's proxy serves both halves (how the live
+  demo runs); leave it unset and it defaults to `http://localhost:8000` for
+  local dev.
 - **No Foundry in this dev environment.** The Foundry/MAF live path is fully
   implemented and tested (including a dead-endpoint fallback test), but runs
   on the deterministic path here.
@@ -261,7 +267,7 @@ panna/
 │   ├── api/              # FastAPI (REST, SSE replay, playback, share)
 │   ├── mcp_server.py     # MCP server — the match toolkit for any MCP client
 │   └── cli.py
-├── frontend/             # Next.js — the pitch-as-blackboard interface
+├── frontend/             # Next.js — the pitch-as-blackboard interface (Dockerized)
 └── tests/                # pytest: pipeline, stream, agentic, MAF, MCP, share
 ```
 
