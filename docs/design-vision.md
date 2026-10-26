@@ -35,8 +35,10 @@ Research grounding:
 ### Mapping to Panna
 
 The four backend agents (already built in `src/agents/`) are re-presented as **three
-actors and one place**. The backend modules stay; MAF Magentic-One still orchestrates
-under the hood. The *presentation* is decentralized:
+actors and one place**. The backend modules stay; the Director still orchestrates
+under the hood (shared state, staggered reveals, failure recovery) and Chalk's
+reasoning runs on Microsoft Agent Framework when Foundry is live. The
+*presentation* is decentralized:
 
 | Backend module | Presentation | Nature |
 |---|---|---|

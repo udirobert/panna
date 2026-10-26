@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from starlette.responses import StreamingResponse
 
 from src.api.routes.matches import _CONFIGS, _MATCHES
-from src.api.session import get_or_create_session, get_session
+from src.api.session import get_or_create_session, get_session, session_for
 
 router = APIRouter()
 
@@ -41,13 +41,18 @@ async def stream(match_id: str, request: Request, autoplay: bool = False) -> Str
     if match_id not in _MATCHES:
         raise HTTPException(404, "match not found; POST /matches/generate first")
     cfg = _CONFIGS.get(match_id)
-    session = get_or_create_session(
-        match_id,
-        _MATCHES[match_id],
-        seed=cfg.seed if cfg else 42,
-        home_team=cfg.home_team if cfg else "Home FC",
-        away_team=cfg.away_team if cfg else "Away United",
-    )
+    session = session_for(match_id, _MATCHES[match_id])
+    if session is None:
+        # first viewer (or a regenerated match): run the agent pipeline on a
+        # worker thread so a Foundry round-trip never blocks the event loop
+        session = await asyncio.to_thread(
+            get_or_create_session,
+            match_id,
+            _MATCHES[match_id],
+            seed=cfg.seed if cfg else 42,
+            home_team=cfg.home_team if cfg else "Home FC",
+            away_team=cfg.away_team if cfg else "Away United",
+        )
     if autoplay and session.autoplay_pending:
         # first connection for this session kicks off the match
         session.autoplay_pending = False

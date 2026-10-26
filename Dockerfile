@@ -10,7 +10,7 @@ WORKDIR /app
 # install deps first for layer caching
 COPY pyproject.toml ./
 RUN pip install --upgrade pip && \
-    pip install fastapi "uvicorn[standard]" pydantic httpx
+    pip install fastapi "uvicorn[standard]" pydantic httpx "agent-framework>=1.23"
 
 # app source
 COPY src ./src

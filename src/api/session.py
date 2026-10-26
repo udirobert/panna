@@ -297,6 +297,9 @@ class MatchSession:
             "failed": sorted(self.failed),
             "health": self.result.get("health", {}),
             "commentary_source": self.result.get("commentary_source", "template"),
+            "reasoning_source": self.result.get("reasoning_source", "template"),
+            "reasoning_model": self.result.get("reasoning_model"),
+            "reasoning_tool_calls": self.result.get("reasoning_tool_calls", 0),
             "events": events_so_far,
             "key_moments": revealed["detection"],
             "insights": revealed["insight"],
@@ -315,6 +318,22 @@ class MatchSession:
 
 _SESSIONS: dict[str, MatchSession] = {}
 _EPOCHS = itertools.count(1)  # globally monotonic so clients always resync
+_BUILD_LOCKS: dict[str, Any] = {}
+_LOCKS_GUARD: Any = None
+
+
+def _build_lock(match_id: str) -> Any:
+    global _LOCKS_GUARD
+    import threading
+
+    if _LOCKS_GUARD is None:
+        _LOCKS_GUARD = threading.Lock()
+    with _LOCKS_GUARD:
+        lock = _BUILD_LOCKS.get(match_id)
+        if lock is None:
+            lock = threading.Lock()
+            _BUILD_LOCKS[match_id] = lock
+        return lock
 
 
 def get_or_create_session(
@@ -325,22 +344,31 @@ def get_or_create_session(
     home_team: str = "Home FC",
     away_team: str = "Away United",
 ) -> MatchSession:
-    """Return the live session for a match, rebuilding if the events changed."""
+    """Return the live session for a match, rebuilding if the events changed.
+
+    Building runs the agent pipeline (which may call Foundry) and is
+    serialized per match so concurrent viewers never pay for it twice. Call
+    this from a worker thread when the Foundry path is live.
+    """
     existing = _SESSIONS.get(match_id)
     if existing is not None and existing.events is events:
         return existing
-    result = DirectorAgent().run({"events": events})
-    session = MatchSession(
-        match_id=match_id,
-        seed=seed,
-        home_team=home_team,
-        away_team=away_team,
-        events=events,
-        result=result,
-    )
-    session.epoch = next(_EPOCHS)
-    _SESSIONS[match_id] = session
-    return session
+    with _build_lock(match_id):
+        existing = _SESSIONS.get(match_id)
+        if existing is not None and existing.events is events:
+            return existing
+        result = DirectorAgent().run({"events": events})
+        session = MatchSession(
+            match_id=match_id,
+            seed=seed,
+            home_team=home_team,
+            away_team=away_team,
+            events=events,
+            result=result,
+        )
+        session.epoch = next(_EPOCHS)
+        _SESSIONS[match_id] = session
+        return session
 
 
 def drop_session(match_id: str) -> None:
@@ -349,3 +377,13 @@ def drop_session(match_id: str) -> None:
 
 def get_session(match_id: str) -> MatchSession | None:
     return _SESSIONS.get(match_id)
+
+
+def session_for(match_id: str, events: list[Event]) -> MatchSession | None:
+    """Cheap lookup: the session for this exact event set, or None.
+
+    Call from the async stream path first so the (possibly Foundry-backed)
+    build can be scheduled on a worker thread instead of blocking the loop.
+    """
+    existing = _SESSIONS.get(match_id)
+    return existing if existing is not None and existing.events is events else None

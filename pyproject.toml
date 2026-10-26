@@ -9,6 +9,10 @@ dependencies = [
     "pydantic>=2.7",
     "httpx>=0.27",
     "openai>=1.50",
+    # Microsoft Agent Framework — Chalk's reasoning loop (tool-calling agents
+    # on Azure OpenAI / Foundry). Degrades to the deterministic analyst when
+    # no Foundry credentials are configured.
+    "agent-framework>=1.23",
 ]
 
 [tool.ruff]

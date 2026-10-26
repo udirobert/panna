@@ -171,10 +171,13 @@ export default function Home() {
     : null;
 
   const commentarySource = s.snapshot?.commentary_source ?? "template";
+  const reasoningSource = s.snapshot?.reasoning_source ?? "template";
+  const reasoningModel = s.snapshot?.reasoning_model;
+  const toolCalls = s.snapshot?.reasoning_tool_calls ?? 0;
   const provenance =
-    commentarySource === "foundry"
-      ? "NARRATED BY GPT-5.4 · MICROSOFT FOUNDRY"
-      : "TEMPLATE NARRATION · FOUNDRY OFFLINE (DETERMINISTIC)";
+    reasoningSource === "foundry"
+      ? `CHALK REASONS ON MICROSOFT AGENT FRAMEWORK (${reasoningModel ?? "Foundry"}, ${toolCalls} tool calls) · BOOTH NARRATES WITH GPT-5.4`
+      : "FOUNDRY OFFLINE — DETERMINISTIC REASONING & NARRATION";
 
   return (
     <div className="container">

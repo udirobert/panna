@@ -70,22 +70,44 @@ and the demo film script ("The Verdict").
 The judging rubric scores 5 categories at 20% each. Panna targets **4 prize categories simultaneously**:
 
 1. **Grand Prize** — most complete and compelling solution
-2. **Best Multi-Agent Orchestration** — 4 agents with distinct roles, shared state, handoffs, failure recovery
-3. **Best Use of Microsoft Foundry** — Foundry orchestrates the 4-agent pipeline
-4. **Best Azure Cloud Native Integration** — Azure Container Apps + Event Hubs + Functions
+2. **Best Multi-Agent Orchestration** — 4 agents with distinct roles, shared state (the pitch blackboard), staggered reveals, failure recovery
+3. **Best Use of Microsoft Foundry** — GPT-5.4 narrates the Booth, reasons the Verdict, and powers Chalk's MAF tool loop; every call traced, every fallback honest
+4. **Best Azure Cloud Native Integration** — ACA deployment with httpConcurrency scaling, health probes, and a reproducible one-command deploy
 
-### Microsoft tech stack (2026 hero tech — see docs/critique.md)
+### Microsoft tech stack — what is real, what is staged
 
-- **Microsoft Agent Framework (MAF)** — Magentic-One multi-agent orchestration, A2A handoffs, shared state, failure recovery; integrates GitHub Copilot SDK
-- **Microsoft Foundry Agent Service** (GA) — hosted agents with sandboxed sessions, state, filesystem; Responses API + Invocations protocol
-- **Foundry Toolboxes (MCP)** — single governed endpoint for tools/skills/enterprise data
-- **Foundry IQ** (GA knowledge bases) + **Web IQ** — SLA-backed RAG replacing custom Azure AI Search plumbing
-- **Foundry Memory** (public preview) — procedural/user/session memory for personalization
-- **Enterprise controls** — Tracing (any framework), ASSERT evals, Agent Control Specification (ACS) guardrails, Guided Guardrails, Rubric
-- **Azure Container Apps** — FastAPI API (serverless, event-driven)
-- **Azure Functions** — serverless agents runtime (per-agent workers)
-- **Azure Event Hubs** — synthetic event stream ingestion
-- **Models** — GPT-5.4 / GPT-5.4 Pro via Model Router (or MAI-Thinking-1); Voice Live optional
+**Live in this repo (verifiable in code, tested):**
+- **Microsoft Agent Framework (MAF)** — Chalk's reasoning is an MAF agent
+  (`agent_framework.Agent` on Azure OpenAI) that reads the match through a
+  six-function toolkit (xG, PPDA, formation, influence, momentum, event
+  windows) in a tool-calling loop, then files JSON insights that are
+  re-validated against the event ledger before they reach the board. Every
+  model tool call is traced (`/agentic/tracing`). `src/foundry/maf.py`.
+- **Microsoft Foundry models** — GPT-5.4 via Azure OpenAI: the Booth narrates
+  the live commentary, Chalk reasons the insights, the Verdict writes the
+  full-time recap. Every call records a span (agent, model, tokens, status).
+  `src/foundry/{client,agents,narrative,maf}.py`.
+- **Graceful determinism** — with no Foundry credentials, the identical
+  Insight/Commentary shapes are produced by the deterministic models, so the
+  product, tests, and demo never depend on the network. The header shows
+  which path ran (provenance), never pretending.
+- **Azure Container Apps** — the API ships as a container with a
+  self-contained Bicep module (httpConcurrency scaling, health probe,
+  `@secure()` secret) and a one-command `azure/deploy.sh` (build → ACR →
+  deploy → public endpoint). `Dockerfile`, `azure/`.
+
+**Staged (definition ready, executes once an Azure subscription is attached):**
+- **Foundry hosted agent** — the Booth as a hosted agent definition
+  (instructions, toolbox, memory, tracing, guardrails) in
+  `foundry-config/booth-agent.yaml`.
+
+**Deliberately cut from scope (honest, not hidden):**
+- A2A handoffs, Magentic-One, Event Hubs, Functions, Foundry IQ, Memory —
+  the pipeline is a shared-state blackboard (stigmergy) by design, and the
+  transport is SSE, not Event Hubs. These were on the Day-1 stack and were
+  cut for depth; they are **not** claimed here.
+
+- **Models** — GPT-5.4 via Azure OpenAI (Model Router)
 - **Frontend** — Next.js: the pitch *is* the interface (chalk telestration, boids swarm, pitch-control glow, Ceefax-style ticker, lens switching)
 - **GitHub Copilot** — development
 
@@ -120,8 +142,8 @@ Panna is built as a **separate project** for the hackathon. After judging, the f
 
 ### Day 1 (Oct 25) — core pipeline + frontend scaffold ✅
 - Synthetic data generator (StatsBomb-like schema, seeded match) + real xG/PPDA/formation models
-- Scout + Analyst agents (MAF, Foundry GPT-5.4) with evidence citations
-- Commentator agent (timed broadcast NL) + Director (A2A orchestration, shared state, failure recovery)
+- Scout + Analyst (Chalk) agents with evidence citations — Chalk's reasoning on Microsoft Agent Framework when Foundry is live
+- Commentator (Booth) agent (timed broadcast NL, Foundry-narrated) + Director (shared-state blackboard, failure recovery)
 - Next.js frontend v1 (shipped in scaffold commit; superseded by the Day 2 vision build)
 
 ### Day 2 (Oct 26) — the vision build + cloud + polish + submit
@@ -134,8 +156,9 @@ the blackboard*, and the demo is a forensic film, "The Verdict":
 5. Ticker band + score bug + lens switching
 6. Failure/recovery choreography · 7. Recap as annotated board · 8. On-air seed regeneration
 
-Cloud: API to ACA; agents to Foundry hosted agents; Event Hubs; Foundry IQ; tracing/ACS.
-Then demo video (<2 min, scripted) + README pitch + submit.
+Cloud: API to ACA (`azure/deploy.sh`); Booth staged as a Foundry hosted agent
+definition; span tracing for every agent call. Then demo video (<2 min,
+scripted) + README pitch + submit.
 
 ### Cut if time short (in order)
 1. Voice Live
@@ -172,8 +195,8 @@ panna/
 │   │   ├── commentator.py # "Booth" — timed broadcast commentary
 │   │   ├── director.py   # coordination, failure recovery
 │   │   └── recap.py      # post-match recap (Day 2)
-│   ├── foundry/          # Foundry hosted agents, Toolboxes, IQ, Memory
-│   ├── azure/            # ACA, Functions, Event Hubs, deployment config
+│   ├── foundry/          # Foundry client + MAF reasoning loop (Chalk), tracing, narrative agents
+│   ├── azure/            # ACA Bicep + one-command deploy script
 │   ├── models/           # xG, PPDA, formation, influence, momentum
 │   ├── api/              # FastAPI service (incl. SSE replay stream)
 │   └── frontend/         # Next.js — pitch-as-blackboard interface
@@ -184,7 +207,7 @@ panna/
 
 ```bash
 # Backend (FastAPI)
-pip install fastapi uvicorn pydantic
+pip install fastapi uvicorn pydantic httpx openai "agent-framework>=1.23"
 make backend          # http://localhost:8000  (docs at /docs)
 
 # Frontend (Next.js)
@@ -193,12 +216,16 @@ cd frontend && npm install && npm run dev   # http://localhost:3000
 # Full pipeline CLI
 make run-pipeline
 
-# Tests / lint
+# Tests / lint (backend + frontend)
 make test
 make lint
 ```
 
-Environment variables (see `.env.example`): `FOUNDRY_ENDPOINT`, `FOUNDRY_API_KEY`, `FOUNDRY_DEPLOYMENT`.
+Without Foundry credentials everything runs deterministically offline. To
+turn on the live Foundry/MAF path, set (see `.env.example`):
+`FOUNDRY_ENDPOINT`, `FOUNDRY_API_KEY`, `FOUNDRY_DEPLOYMENT` (default
+`gpt-5.4`), optionally `FOUNDRY_API_VERSION` and `FRONTEND_ORIGIN` (where the
+share poster's replay link points).
 
 ## Links
 

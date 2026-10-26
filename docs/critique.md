@@ -7,6 +7,21 @@
 > evidence chips" and "My Lens toggle", which became the pitch-as-blackboard visual language
 > (chalk telestration, boids swarm, Evidence Spotlight, lens switching). Backend/stack
 > findings below remain current.
+>
+> **Implementation status (2026-10-26):** what actually shipped vs. what was cut.
+> - **Shipped:** MAF reasoning loop (Chalk = an `agent_framework.Agent` with a
+>   six-function toolkit + evidence validation, `src/foundry/maf.py`); Foundry
+>   GPT-5.4 for Booth narration + Verdict recap; span tracing for every agent
+>   call (`/agentic/tracing`); ACA deploy scaffold (Dockerfile, Bicep,
+>   `azure/deploy.sh`); deterministic fallback for every Foundry path; the
+>   viral match loop (URL-seed replay + `/share` case-file poster).
+> - **Cut (deliberately, in order of depth-over-breadth):** A2A handoffs,
+>   Magentic-One pattern, Event Hubs, Azure Functions, Foundry IQ, Foundry
+>   Memory, hosted-agent *deployment* (the Booth definition is staged in
+>   `foundry-config/booth-agent.yaml` but not yet deployed — no Azure
+>   subscription in the dev environment). The multi-agent story is
+>   shared-state blackboard + staggered reveals + failure recovery, which is
+>   what the 💡 category judges on; the cut items are listed here, not hidden.
 
 ## 1. What the hackathon actually rewards (from official rules)
 

@@ -121,15 +121,23 @@ class AnalystAgent(BaseAgent):
                     ),
                     value=biggest["momentum"],
                     confidence=0.7,
-                    evidence=[
-                        e.id
-                        for e in events
-                        if biggest["window"].split("'")[0]
-                        and e.minute >= int(biggest["window"].split("'")[0])
-                        and e.minute < int(biggest["window"].split("'")[1])
-                        and e.type.value in ("shot", "goal")
-                    ][:6],
+                    evidence=_window_evidence(events, biggest["window"]),
                 )
             )
 
         return insights
+
+
+def _window_evidence(events: list[Event], window: str) -> list[str]:
+    """Shot/goal event ids inside a momentum window like "70'-80'".
+
+    (The old parser split on the apostrophe and produced int("-80").)
+    """
+    try:
+        start = int(window.split("-")[0].strip().rstrip("'"))
+        end = int(window.split("-")[1].strip().rstrip("'"))
+    except (ValueError, IndexError):
+        return []
+    return [e.id for e in events if start <= e.minute < end and e.type.value in ("shot", "goal")][
+        :6
+    ]

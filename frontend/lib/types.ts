@@ -84,6 +84,9 @@ export type Snapshot = {
   insights: Insight[];
   commentary: Commentary[];
   commentary_source?: "foundry" | "template";
+  reasoning_source?: "foundry" | "template";
+  reasoning_model?: string | null;
+  reasoning_tool_calls?: number;
   momentum: {
     minutes: number[];
     home_cum: number[];

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import time
-
-from src.agents.analyst import AnalystAgent
 from src.agents.base import BaseAgent
 from src.agents.commentator import CommentatorAgent
 from src.agents.recap import RecapAgent
@@ -17,7 +14,6 @@ class DirectorAgent(BaseAgent):
 
     def __init__(self) -> None:
         self.scout = ScoutAgent()
-        self.analyst = AnalystAgent()
         self.commentator = CommentatorAgent()
         self.recap = RecapAgent()
         self.health: dict[str, AgentHealth] = {}
@@ -36,18 +32,28 @@ class DirectorAgent(BaseAgent):
             self.health["scout"] = AgentHealth(agent="scout", status="healthy")
         shared["key_moments"] = km or []
 
-        # 2. Analyst (retry once)
-        insights, err = self.analyst.safe_run({"events": events})
-        if err:
-            time.sleep(0.1)
-            insights, err = self.analyst.safe_run({"events": events})
-        if err:
-            errors["analyst"] = err
-            insights = []
-            self.health["analyst"] = AgentHealth(agent="analyst", status="down", error=err)
-        else:
-            self.health["analyst"] = AgentHealth(agent="analyst", status="healthy")
+        # 2. Analyst (Chalk): reasoning on the Microsoft Agent Framework when
+        #    Foundry is configured — a tool-calling loop over the match; the
+        #    deterministic analyst otherwise. Never throws (it falls back).
+        from src.foundry import maf as _maf
+
+        chalk = _maf.chalk_insights(events, self._match_id(shared))
+        insights = chalk["insights"]
         shared["insights"] = insights or []
+        shared["reasoning_source"] = chalk["source"]
+        shared["reasoning_model"] = chalk["model"]
+        shared["reasoning_tool_calls"] = chalk["tool_calls"]
+        if chalk["error"]:
+            errors["analyst"] = chalk["error"]
+            self.health["analyst"] = AgentHealth(
+                agent="analyst", status="degraded", error=chalk["error"]
+            )
+        else:
+            self.health["analyst"] = AgentHealth(
+                agent="analyst",
+                status="healthy",
+                last_ok=chalk["model"] if chalk["source"] == "foundry" else None,
+            )
 
         # 3. Degraded fallback: if analyst down, derive minimal insights from scout
         if not shared["insights"] and shared["key_moments"]:
@@ -110,6 +116,9 @@ class DirectorAgent(BaseAgent):
             "insights": shared["insights"],
             "commentary": shared["commentary"],
             "commentary_source": shared.get("commentary_source", "template"),
+            "reasoning_source": shared.get("reasoning_source", "template"),
+            "reasoning_model": shared.get("reasoning_model"),
+            "reasoning_tool_calls": shared.get("reasoning_tool_calls", 0),
             "feed": feed,
             "health": {k: v.model_dump() for k, v in self.health.items()},
             "errors": errors,

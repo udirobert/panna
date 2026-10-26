@@ -9,19 +9,26 @@
 ## Goal
 
 Win multiple prize categories simultaneously by visibly using 2026 Microsoft hero tech:
-Foundry hosted agents (MAF + Magentic-One + A2A), Toolboxes, Foundry IQ, Azure Functions
-serverless agent runtime, ACA, Event Hubs, Memory, Tracing/ACS/ASSERT, plus a polished
-Next.js frontend. Synthetic football data only. Every insight carries evidence citations.
+a Microsoft Agent Framework reasoning loop with tool-calling agents, Foundry GPT-5.4
+narration and verdicts, span tracing for every agent call, ACA deployment, plus a
+polished Next.js frontend. Synthetic football data only. Every insight carries
+evidence citations.
 
-## Revised tech stack (hero-tech aligned)
+## Tech stack (as built 2026-10-26 — see README for live/staged/cut)
 
-- **Orchestration:** Microsoft Agent Framework (MAF) — Magentic-One multi-agent pattern, A2A handoffs, shared state, failure recovery. Integrates GitHub Copilot SDK.
-- **Agent runtime:** Foundry Agent Service (GA) hosted agents — sandboxed sessions, state, filesystem, framework-agnostic. Protocols: Responses API + Invocations.
-- **Tools/data:** Foundry Toolboxes (MCP) → Foundry IQ knowledge bases (GA) + Web IQ. Replaces custom RAG.
-- **Personalization:** Foundry Memory (procedural/user/session).
-- **Enterprise controls:** Tracing (any framework), ASSERT evals, ACS YAML guardrails, Guided Guardrails, Rubric evaluator.
-- **Compute:** Azure Container Apps (FastAPI API) + Azure Functions (per-agent serverless workers) + Azure Event Hubs (synthetic stream ingestion).
-- **Models:** GPT-5.4 / GPT-5.4 Pro via Model Router (or MAI-Thinking-1). Voice Live optional.
+- **Orchestration:** the Director runs a shared-state blackboard (stigmergy):
+  staggered reveals on the match clock, per-agent health, failure injection with
+  peer recovery. Multi-agent by design, not message-passing.
+- **Reasoning:** Microsoft Agent Framework (MAF) — Chalk is an `agent_framework.Agent`
+  on Azure OpenAI with a six-function toolkit (xG, PPDA, formation, influence,
+  momentum, event windows). The model must cite real event ids; output is
+  validated against the ledger before it reaches the board.
+- **Narration:** Foundry GPT-5.4 (Booth) in the live Director path; Verdict
+  recap agent at full time. Both traced, both with deterministic fallback.
+- **Governance:** per-call span tracing (agent, model, tokens, status) at
+  `/agentic/tracing`; `/health` reports Foundry availability.
+- **Compute:** Azure Container Apps (FastAPI API, httpConcurrency scaling,
+  health probe, `@secure()` secret) via `azure/deploy.sh`.
 - **Frontend:** Next.js — the pitch *is* the interface (design-vision v2): no card
   grid; chalk telestration, boids swarm, pitch-control glow, Ceefax-style ticker,
   score bug, lens switching, SSE replay with rewind/freeze/failure injection.
@@ -38,7 +45,7 @@ and the Pitch itself is the fourth actor (a blackboard, not a boss).
 | **Scout** | **Numbers** — the swarm | Watches synthetic stream; flags key moments (shots, tackles, possession shifts, formation changes, set pieces) | Structured markers: `{event_id, minute, type, importance, evidence:[event_ids]}` |
 | **Analyst** | **Chalk** — the specialists | Computes tactical insights: xG per shot (distance/angle/body part), PPDA pressing intensity, formation effectiveness, player influence (xT/network), momentum (rolling xG) | Insights: `{id, type, claim, value, confidence, evidence:[event_ids]}` |
 | **Commentator** | **Booth** | Timed broadcast NL from Scout+Analyst, cites insights, professional tone | Commentary entries with minute/second timing |
-| **Director** | **the Pitch** (coordination as a place) | A2A orchestration, prioritization, shared state, failure recovery (retry + degraded fallback), agent health | Curated broadcast feed |
+| **Director** | **the Pitch** (coordination as a place) | Shared-state blackboard orchestration, prioritization, staggered reveals, failure recovery (deterministic fallback), agent health | Curated broadcast feed |
 | **Recap** (Day2) | recap = the annotated board, printed | Post-match summary from all above | Recap text + top insights |
 
 ## Explainability contract
@@ -64,8 +71,8 @@ the film; the scriptable failure-injection endpoint drives the rehearsed demo be
 
 ### Day 1 (Oct 25) — core pipeline + frontend ✅ (scaffolded)
 - Morning: Synthetic data generator (StatsBomb-like schema, seeded match) + xG/PPDA/formation models. Commit.
-- Midday: Scout + Analyst agents (MAF, Foundry GPT-5.4), evidence citations. Local run.
-- Afternoon: Commentator agent (timed, broadcast tone) + Director (A2A orchestration, shared state, failure recovery).
+- Midday: Scout + Analyst agents (Chalk on MAF when Foundry is live), evidence citations. Local run.
+- Afternoon: Commentator agent (timed, broadcast tone) + Director (shared-state blackboard, failure recovery).
 - Evening: Next.js frontend v1 (card grid, shipped in scaffold commit). **Superseded by Day 2 vision build.**
 
 ### Day 2 (Oct 26) — the vision build + cloud + polish + submit
@@ -83,10 +90,13 @@ Frontend work follows `docs/design-vision.md` §7 — **build the shots, not the
 8. Seed regeneration on air + invitation screen
 9. Sound pass + title cards naming rubric criteria
 
-Cloud work, morning in parallel where possible: deploy API to ACA, agents to Foundry
-hosted agents, Event Hubs ingestion (cut → SSE from API), Foundry IQ, tracing/ACS.
-Midday: Recap agent + lens personalization (Memory; cut → toggle). Demo video
-afternoon (<2 min, "The Verdict" script) + README pitch + submit. Buffer.
+Cloud work, morning in parallel where possible: deploy API to ACA
+(`azure/deploy.sh`); Booth staged as a Foundry hosted agent definition
+(`foundry-config/booth-agent.yaml`); span tracing for every agent call
+(Shipped: MAF loop, tracing, share/viral loop, Verdict recap). Event Hubs
+ingestion cut (SSE from API). Foundry IQ cut. Midday: lens personalization
+(Memory; cut → toggle). Demo video afternoon (<2 min, "The Verdict" script)
++ README pitch + submit. Buffer.
 
 ## Cut if time short (in order)
 1. Voice Live
@@ -131,19 +141,26 @@ Events are JSON objects:
 
 Event types: `pass` (short/long/through/cross/back), `shot` (on_target/off_target/blocked/goal, with xG), `tackle`, `interception`, `foul` (yellow/red/no card), `possession_change`, `formation_change`, `substitution`, `set_piece` (corner/free_kick/penalty/throw_in), `goal` (with assist, type), `carry`, `pressure`.
 
-## Microsoft Foundry integration
-- Use GPT-5.4 via Model Router for agent reasoning.
-- Each agent is a Foundry hosted agent with its own system prompt + tools via Toolboxes (MCP).
-- Shared state via match-state store; A2A messages carry context.
-- Foundry IQ for historical match context (RAG).
-- Memory for fan personalization.
-- Tracing + ASSERT + ACS for governance/explainability.
+## Microsoft Foundry integration (as built)
+- GPT-5.4 via Azure OpenAI powers three paths: **Booth** narration (live
+  Director path), **Verdict** recap (full time), and **Chalk's MAF reasoning
+  loop** (tool-calling agent over the match toolkit).
+- Chalk's toolkit is six deterministic models exposed as MAF tools; the model
+  must cite real event ids and output is validated against the ledger.
+- Every Foundry call (and every deterministic fallback) records a span
+  (agent, model, tokens, status) surfaced at `/agentic/tracing`; `/health`
+  reports Foundry availability.
+- Graceful determinism: no credentials → identical output shapes, provenance
+  shown, nothing pretends.
+- Staged: the Booth as a Foundry hosted agent (`foundry-config/booth-agent.yaml`).
+- Cut: Toolboxes (MCP), Foundry IQ RAG, Memory, ASSERT/ACS guardrails.
 
-## Azure deployment
-- **Azure Container Apps** for the API (event-driven, serverless).
-- **Azure Event Hubs** for synthetic event stream ingestion.
-- **Azure Functions** for individual agent processing (serverless agents runtime).
-- **Foundry IQ** for RAG (historical match context).
+## Azure deployment (as built)
+- **Azure Container Apps** for the API: self-contained Bicep (httpConcurrency
+  scaling, health probe, `@secure()` Foundry key), `azure/deploy.sh` builds
+  the image, creates an ACR, deploys, and prints the public endpoint.
+- Cut: Event Hubs (SSE replay from the API directly), Azure Functions
+  (agents run in-process; the MAF agent loop is the unit of parallelism).
 
 ## Immediate next steps
 1. Scaffold `src/` (events, agents, api, frontend).
