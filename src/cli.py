@@ -61,17 +61,35 @@ def _compliance(args: argparse.Namespace) -> None:
 
 
 def _ingest(args: argparse.Namespace) -> None:
-    """Map a real fixture payload onto the event ledger — validates the seam."""
-    from src.ingest import SportmonksAdapter
+    """Map a provider feed onto the event ledger — validates the seam."""
+    from src.ingest import SportmonksAdapter, StatsBombAdapter
 
-    adapter = SportmonksAdapter()
-    if args.file:
-        payload = json.loads(Path(args.file).read_text())
-        result = adapter.to_events(payload.get("data", payload))
+    if args.provider == "statsbomb":
+        adapter = StatsBombAdapter()
+        if args.file:
+            payload = json.loads(Path(args.file).read_text())
+            result = adapter.to_events(
+                payload.get("events", payload),
+                home=args.home or payload.get("home", "Home"),
+                away=args.away or payload.get("away", "Away"),
+                match_id=str(args.match_id or payload.get("match_id") or "sb_file"),
+            )
+        elif args.match_id:
+            result = adapter.fetch(args.competition_id, args.season_id, int(args.match_id))
+        else:
+            result = None
     else:
-        result = adapter.fetch(args.fixture_id) if args.fixture_id else None
+        adapter = SportmonksAdapter()
+        if args.file:
+            payload = json.loads(Path(args.file).read_text())
+            result = adapter.to_events(payload.get("data", payload))
+        else:
+            result = adapter.fetch(args.fixture_id) if args.fixture_id else None
     if result is None:
-        print("no data — set SPORTMONKS_API_TOKEN or pass --file payload.json")
+        print(
+            "no data — statsbomb needs --match-id (+--competition-id/--season-id) "
+            "or --file; sportmonks needs SPORTMONKS_API_TOKEN or --file"
+        )
         return
     print(json.dumps(result.provenance, indent=2))
     for e in result.events[:10]:
@@ -126,7 +144,13 @@ def main() -> None:
     comp.add_argument("--match-id", default="match_art50")
     sub.add_parser("evaluate")
     ing = sub.add_parser("ingest")
+    ing.add_argument("--provider", choices=["statsbomb", "sportmonks"], default="statsbomb")
     ing.add_argument("--fixture-id", type=str, default="")
+    ing.add_argument("--match-id", type=str, default="")
+    ing.add_argument("--competition-id", type=int, default=43)
+    ing.add_argument("--season-id", type=int, default=3)
+    ing.add_argument("--home", type=str, default="")
+    ing.add_argument("--away", type=str, default="")
     ing.add_argument("--file", type=str, default="")
     args = p.parse_args()
 

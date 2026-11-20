@@ -46,11 +46,12 @@ both compliant — verifiably.*
 
 ## Ranked next steps
 
-1. **Article 50 readiness demo** — run the live pipeline against a licensed
-   feed (Sportmonks €29/mo), produce the audit ledger + provenance output
-   as a one-page "compliance readiness" artifact. *Adapter shipped*
-   (`src/ingest/sportmonks.py`, `panna-run ingest`) — a real-payload pilot
-   now needs only a `SPORTMONKS_API_TOKEN`.
+1. **Article 50 readiness demo** — run the live pipeline against a real
+   feed, produce the audit ledger + provenance output as a one-page
+   "compliance readiness" artifact. *Adapters shipped* (`src/ingest/`,
+   `panna-run ingest`): **StatsBomb open data** gives real event-level
+   matches free with no key (verified on the 2018 World Cup final);
+   Sportmonks stays for licensed coverage.
 2. **Founders Hub application** — funds Foundry + Translator + Speech on
    managed identity; the deploy path is already keyless.
 3. **Package the gate** — extract `verifier.py` + `audit.py` +
