@@ -14,6 +14,10 @@
 #   export FOUNDRY_API_KEY="<key>"          # never commit / never echo
 #   export FOUNDRY_DEPLOYMENT="gpt-5.4"
 #   export FRONTEND_ORIGIN="https://<frontend-host>"  # where the share poster's replay link points
+#   # optional — light up ?lang= and /audio/speak on the managed identity:
+#   export TRANSLATOR_REGION="westeurope" TRANSLATOR_AUTH="entra"
+#   export SPEECH_REGION="westeurope" SPEECH_AUTH="entra"
+#   export AI_SERVICES_ACCOUNT="<multi-service account name>"  # grants Cognitive Services User
 #
 # Run:
 #   ./azure/deploy.sh
@@ -69,6 +73,11 @@ az deployment group create \
     foundryEndpoint="${FOUNDRY_ENDPOINT}" \
     foundryDeployment="${FOUNDRY_DEPLOYMENT}" \
     frontendOrigin="${FRONTEND_ORIGIN}" \
+    translatorRegion="${TRANSLATOR_REGION:-}" \
+    translatorAuth="${TRANSLATOR_AUTH:-}" \
+    speechRegion="${SPEECH_REGION:-}" \
+    speechAuth="${SPEECH_AUTH:-}" \
+    aiServicesAccountName="${AI_SERVICES_ACCOUNT:-}" \
     ${SECRET_ARG:-foundryApiKey=none} \
   --output table
 

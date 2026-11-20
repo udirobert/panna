@@ -27,10 +27,24 @@ param foundryAccountName string = ''
 // Where the shareable case-file poster should point its "replay" button
 param frontendOrigin string = ''
 
+// Optional AI-services wiring for the multilingual + spoken feeds. Both
+// clients take managed-identity Entra tokens at runtime (TRANSLATOR_AUTH /
+// SPEECH_AUTH = entra) — set the region only when the resources exist; left
+// empty the API serves the honest fallback (original text / text AD feed).
+param translatorRegion string = ''
+param translatorAuth string = ''
+param speechRegion string = ''
+param speechAuth string = ''
+
+@description('Name of the AI-services account hosting Translator/Speech (empty = no grant); Entra auth needs Cognitive Services User on it')
+param aiServicesAccountName string = ''
+
 var caName = 'panna-${environmentName}'
 
 // Cognitive Services OpenAI User — lets the identity call chat completions
 var openAiUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+// Cognitive Services User — lets the identity call Translator + Speech APIs
+var cognitiveUserRoleId = 'a97b65f3-24c7-4388-baec-2e87135dc908'
 
 resource ca 'Microsoft.App/containerApps@2024-03-01' = {
   name: caName
@@ -77,6 +91,22 @@ resource ca 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'FRONTEND_ORIGIN'
               value: frontendOrigin
+            }
+            {
+              name: 'TRANSLATOR_REGION'
+              value: translatorRegion
+            }
+            {
+              name: 'TRANSLATOR_AUTH'
+              value: translatorAuth
+            }
+            {
+              name: 'SPEECH_REGION'
+              value: speechRegion
+            }
+            {
+              name: 'SPEECH_AUTH'
+              value: speechAuth
             }
           ]
           ports: [
@@ -140,6 +170,27 @@ resource openAiRole 'Microsoft.Authorization/roleAssignments@2022-04-01' =
       roleDefinitionId: subscriptionResourceId(
         'Microsoft.Authorization/roleDefinitions',
         openAiUserRoleId
+      )
+      principalId: ca.identity.principalId
+      principalType: 'ServicePrincipal'
+    }
+  }
+
+// Same keyless grant for the AI-services account (Translator/Speech live
+// behind one multi-service resource on most subscriptions).
+resource aiServicesAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing =
+  if (aiServicesAccountName != '') {
+    name: aiServicesAccountName
+  }
+
+resource cognitiveRole 'Microsoft.Authorization/roleAssignments@2022-04-01' =
+  if (aiServicesAccountName != '') {
+    name: guid(aiServicesAccount.id, ca.id, cognitiveUserRoleId)
+    scope: aiServicesAccount
+    properties: {
+      roleDefinitionId: subscriptionResourceId(
+        'Microsoft.Authorization/roleDefinitions',
+        cognitiveUserRoleId
       )
       principalId: ca.identity.principalId
       principalType: 'ServicePrincipal'
