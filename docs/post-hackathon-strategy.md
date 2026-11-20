@@ -48,7 +48,9 @@ both compliant — verifiably.*
 
 1. **Article 50 readiness demo** — run the live pipeline against a licensed
    feed (Sportmonks €29/mo), produce the audit ledger + provenance output
-   as a one-page "compliance readiness" artifact.
+   as a one-page "compliance readiness" artifact. *Adapter shipped*
+   (`src/ingest/sportmonks.py`, `panna-run ingest`) — a real-payload pilot
+   now needs only a `SPORTMONKS_API_TOKEN`.
 2. **Founders Hub application** — funds Foundry + Translator + Speech on
    managed identity; the deploy path is already keyless.
 3. **Package the gate** — extract `verifier.py` + `audit.py` +

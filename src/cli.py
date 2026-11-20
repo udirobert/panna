@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from src.agents.director import DirectorAgent
 from src.agents.recap import RecapAgent
@@ -57,6 +58,24 @@ def _compliance(args: argparse.Namespace) -> None:
     manifest = write_manifest(report)
     print(json.dumps(report["summary"], indent=2))
     print(f"\nReport: {md}\nManifest: {manifest}")
+
+
+def _ingest(args: argparse.Namespace) -> None:
+    """Map a real fixture payload onto the event ledger — validates the seam."""
+    from src.ingest import SportmonksAdapter
+
+    adapter = SportmonksAdapter()
+    if args.file:
+        payload = json.loads(Path(args.file).read_text())
+        result = adapter.to_events(payload.get("data", payload))
+    else:
+        result = adapter.fetch(args.fixture_id) if args.fixture_id else None
+    if result is None:
+        print("no data — set SPORTMONKS_API_TOKEN or pass --file payload.json")
+        return
+    print(json.dumps(result.provenance, indent=2))
+    for e in result.events[:10]:
+        print(f"  {e.minute:3d}' {e.type.value:12s} {e.team.value:4s} {e.player}")
 
 
 def _evaluate(args: argparse.Namespace) -> None:
@@ -106,11 +125,17 @@ def main() -> None:
     comp.add_argument("--seed", type=int, default=137)
     comp.add_argument("--match-id", default="match_art50")
     sub.add_parser("evaluate")
+    ing = sub.add_parser("ingest")
+    ing.add_argument("--fixture-id", type=str, default="")
+    ing.add_argument("--file", type=str, default="")
     args = p.parse_args()
 
-    {"redteam": _redteam, "compliance": _compliance, "evaluate": _evaluate}.get(args.cmd, _run)(
-        args
-    )
+    {
+        "redteam": _redteam,
+        "compliance": _compliance,
+        "evaluate": _evaluate,
+        "ingest": _ingest,
+    }.get(args.cmd, _run)(args)
 
 
 if __name__ == "__main__":

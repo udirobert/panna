@@ -45,25 +45,28 @@ def _body_part(e: Event) -> str:
 def describe_event(e: Event, home_team: str = "Home", away_team: str = "Away") -> str | None:
     """Describe one event for the audio feed, or None if it isn't describable."""
     team = home_team if e.team.value == "Home" else away_team
-    channel = _channel(e.position.y)
-    zone = _zone(e.position.x)
+    # real-data events carry no coordinates (metadata.position_estimated) —
+    # narrate the area honestly rather than invent a channel
+    estimated = bool(e.metadata.get("position_estimated"))
+    where = "in the area" if estimated else f"on the {_channel(e.position.y)}"
+    where_full = (
+        "in the area" if estimated else f"from the {_channel(e.position.y)} {_zone(e.position.x)}"
+    )
+    zone = "in the area" if estimated else _zone(e.position.x)
 
     if e.type == EventType.GOAL:
         return (
-            f"Goal for {team}. {e.player} meets it on the {channel} and finishes "
+            f"Goal for {team}. {e.player} meets it {where} and finishes "
             f"with {_body_part(e)} — the net bulges and the crowd is on its feet."
         )
     if e.type == EventType.SHOT:
         outcome = e.outcome or ""
         if outcome == "on_target":
             return (
-                f"{e.player} lets fly from the {channel} {zone} with {_body_part(e)} — "
+                f"{e.player} lets fly {where_full} with {_body_part(e)} — "
                 f"the goalkeeper has to get down to it."
             )
-        return (
-            f"{e.player} shoots from the {channel} {zone} with {_body_part(e)} — "
-            f"it sails away from goal."
-        )
+        return f"{e.player} shoots {where_full} with {_body_part(e)} — it sails away from goal."
     if e.type == EventType.TACKLE:
         if e.outcome == "success":
             return f"{e.player} slides in {zone} and wins the ball cleanly for {team}."
@@ -75,7 +78,7 @@ def describe_event(e: Event, home_team: str = "Home", away_team: str = "Away") -
         return f"{e.player} is penalised for the challenge {zone}; free kick to the opposition."
     if e.type == EventType.SET_PIECE:
         kind = str(e.metadata.get("set_piece_type", "set piece")).replace("_", " ")
-        return f"{team} have a {kind} on the {channel} {zone}; {e.player} stands over it."
+        return f"{team} have a {kind} {where}; {e.player} stands over it."
     if e.type == EventType.SUBSTITUTION:
         player_in = e.metadata.get("player_in")
         if player_in:

@@ -60,3 +60,4 @@ frontend/out/
 
 # Runtime audit ledger (generated)
 reports/audit.jsonl
+reports/audit-*.jsonl

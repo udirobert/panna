@@ -149,6 +149,17 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
   `TRANSLATOR_AUTH=entra`); the Bicep module assigns
   `Cognitive Services OpenAI User` to the container app's identity. No stored
   secrets. API-key env auth remains for local dev.
+- **Real-data seam** — `src/ingest/sportmonks.py` maps a Sportmonks fixture
+  payload onto the canonical event ledger, so the same Verifier, AD feed and
+  compliance artifacts run on licensed data, not a parallel schema. Basic-tier
+  events carry no coordinates: positions are flagged
+  `metadata.position_estimated` and the AD describer drops directional
+  wording rather than narrating a channel it doesn't know. Reported team xG
+  lands in `provenance.reported_xg` (measured vs derived stays separable);
+  unmapped provider types are counted, never silently dropped. Own goals
+  credit the beneficiary side with `conceded_by` preserved.
+  `panna-run ingest --fixture-id N` (live, needs `SPORTMONKS_API_TOKEN`) or
+  `--file payload.json` (offline).
 - **Cost guard + ledger** — the matchday auto-pauses when the last viewer
   disconnects and resumes when one returns (agents only spend when watched);
   `GET /status` reports per-match tokens + estimated spend.
@@ -181,6 +192,12 @@ Projects must use synthetic, football-realistic data. No real Premier League mat
 - Possession changes and momentum shifts
 - Formation changes and substitutions
 - Set pieces (corners, free kicks, penalties)
+
+Real feeds can replace the synthetic generator without changing the ledger:
+`src/ingest/` maps provider payloads (Sportmonks today) onto the same `Event`
+schema, marking what's measured vs estimated so downstream trust surfaces
+stay honest. `panna-run ingest --file payload.json` validates a payload
+offline.
 
 ### Explainability
 
