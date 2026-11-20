@@ -53,38 +53,74 @@ def _redteam(args: argparse.Namespace) -> None:
 def _compliance(args: argparse.Namespace) -> None:
     from src.compliance import run_readiness, write_manifest, write_report
 
-    report = run_readiness(seed=args.seed, match_id=args.match_id)
+    real = _resolve_ingest(args) if getattr(args, "real", False) else None
+    if real is not None:
+        events, prov = real.events, real.provenance
+        match_id = str(prov.get("match_id") or prov.get("fixture_id") or "real")
+        report = run_readiness(
+            match_id=f"{prov['provider']}_{match_id}",
+            events=events,
+            home=prov.get("home_team") or "Home",
+            away=prov.get("away_team") or "Away",
+            data_provenance=prov,
+        )
+        print(
+            f"data: {prov['provider']} — {prov.get('home_team')} v {prov.get('away_team')}"
+            f" ({prov['events_mapped']} events, {prov['events_skipped']} skipped)"
+        )
+    else:
+        report = run_readiness(seed=args.seed, match_id=args.match_id)
     md = write_report(report)
     manifest = write_manifest(report)
     print(json.dumps(report["summary"], indent=2))
     print(f"\nReport: {md}\nManifest: {manifest}")
 
 
-def _ingest(args: argparse.Namespace) -> None:
-    """Map a provider feed onto the event ledger — validates the seam."""
+def _resolve_ingest(args: argparse.Namespace):
+    """Shared provider resolution — returns IngestResult or None."""
     from src.ingest import SportmonksAdapter, StatsBombAdapter
 
+    refresh = getattr(args, "refresh", False)
     if args.provider == "statsbomb":
         adapter = StatsBombAdapter()
         if args.file:
             payload = json.loads(Path(args.file).read_text())
-            result = adapter.to_events(
+            return adapter.to_events(
                 payload.get("events", payload),
                 home=args.home or payload.get("home", "Home"),
                 away=args.away or payload.get("away", "Away"),
                 match_id=str(args.match_id or payload.get("match_id") or "sb_file"),
             )
-        elif args.match_id:
-            result = adapter.fetch(args.competition_id, args.season_id, int(args.match_id))
-        else:
-            result = None
-    else:
-        adapter = SportmonksAdapter()
-        if args.file:
-            payload = json.loads(Path(args.file).read_text())
-            result = adapter.to_events(payload.get("data", payload))
-        else:
-            result = adapter.fetch(args.fixture_id) if args.fixture_id else None
+        if args.match_id:
+            return adapter.fetch(
+                args.competition_id, args.season_id, int(args.match_id), refresh=refresh
+            )
+        return None
+    adapter = SportmonksAdapter()
+    if args.file:
+        payload = json.loads(Path(args.file).read_text())
+        return adapter.to_events(payload.get("data", payload))
+    if args.fixture_id:
+        return adapter.fetch(args.fixture_id, refresh=refresh)
+    return None
+
+
+def _add_ingest_args(p: argparse.ArgumentParser, include_match_id: bool = True) -> None:
+    p.add_argument("--provider", choices=["statsbomb", "sportmonks"], default="statsbomb")
+    p.add_argument("--fixture-id", type=str, default="")
+    if include_match_id:
+        p.add_argument("--match-id", type=str, default="")
+    p.add_argument("--competition-id", type=int, default=43)
+    p.add_argument("--season-id", type=int, default=3)
+    p.add_argument("--home", type=str, default="")
+    p.add_argument("--away", type=str, default="")
+    p.add_argument("--file", type=str, default="")
+    p.add_argument("--refresh", action="store_true")
+
+
+def _ingest(args: argparse.Namespace) -> None:
+    """Map a provider feed onto the event ledger — validates the seam."""
+    result = _resolve_ingest(args)
     if result is None:
         print(
             "no data — statsbomb needs --match-id (+--competition-id/--season-id) "
@@ -142,16 +178,14 @@ def main() -> None:
     comp = sub.add_parser("compliance")
     comp.add_argument("--seed", type=int, default=137)
     comp.add_argument("--match-id", default="match_art50")
+    comp.add_argument(
+        "--real", action="store_true", help="run against an ingested real feed instead of synthetic"
+    )
     sub.add_parser("evaluate")
     ing = sub.add_parser("ingest")
-    ing.add_argument("--provider", choices=["statsbomb", "sportmonks"], default="statsbomb")
-    ing.add_argument("--fixture-id", type=str, default="")
-    ing.add_argument("--match-id", type=str, default="")
-    ing.add_argument("--competition-id", type=int, default=43)
-    ing.add_argument("--season-id", type=int, default=3)
-    ing.add_argument("--home", type=str, default="")
-    ing.add_argument("--away", type=str, default="")
-    ing.add_argument("--file", type=str, default="")
+    _add_ingest_args(ing)
+    # comp's own --match-id doubles as the provider match id under --real
+    _add_ingest_args(comp, include_match_id=False)
     args = p.parse_args()
 
     {

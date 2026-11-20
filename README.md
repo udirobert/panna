@@ -160,8 +160,12 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
   and the AD describer drops directional wording rather than narrate a
   channel it doesn't know. Own goals credit the beneficiary with
   `conceded_by` preserved; unmapped provider types are counted, never
-  silently dropped. `panna-run ingest --provider statsbomb --match-id 8658
-  --competition-id 43 --season-id 3` (live, free) or `--file payload.json`.
+  silently dropped. Fetches are disk-cached (`src/ingest/cache.py` —
+  finished-match event files are immutable so they cache forever, indexes
+  24h, live fixtures 5m; `fetch_source` in provenance says cache vs live,
+  `--refresh` bypasses). `panna-run ingest --provider statsbomb --match-id
+  8658` (live, free) or `--file payload.json`; `panna-run compliance --real
+  --match-id 8658` produces the Article 50 artifact from a real match.
 - **Cost guard + ledger** — the matchday auto-pauses when the last viewer
   disconnects and resumes when one returns (agents only spend when watched);
   `GET /status` reports per-match tokens + estimated spend.

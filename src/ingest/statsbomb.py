@@ -39,6 +39,8 @@ from typing import Any
 import httpx
 
 from src.events.schema import Event, EventType, Position, Team
+from src.ingest.cache import read as _cache_read
+from src.ingest.cache import write as _cache_write
 from src.ingest.sportmonks import IngestResult
 
 _BASE = os.getenv(
@@ -101,19 +103,39 @@ class StatsBombAdapter:
 
     # ── live fetch (free, no key) ───────────────────────────────────────
 
-    def fetch(self, competition_id: int, season_id: int, match_id: int) -> IngestResult | None:
+    def fetch(
+        self, competition_id: int, season_id: int, match_id: int, refresh: bool = False
+    ) -> IngestResult | None:
         try:
-            matches = self._http.get(f"{_BASE}/matches/{competition_id}/{season_id}.json").json()
+            source: dict[str, str] = {}
+            mkey = f"{competition_id}_{season_id}"
+            matches = None if refresh else _cache_read("statsbomb-matches", mkey)
+            if matches is None:
+                matches = self._http.get(
+                    f"{_BASE}/matches/{competition_id}/{season_id}.json"
+                ).json()
+                _cache_write("statsbomb-matches", mkey, matches)
+                source["matches"] = "live"
+            else:
+                source["matches"] = "cache"
             meta = next((m for m in matches if m["match_id"] == match_id), None)
             if meta is None:
                 return None
-            events = self._http.get(f"{_BASE}/events/{match_id}.json").json()
-            return self.to_events(
+            events = None if refresh else _cache_read("statsbomb-events", match_id)
+            if events is None:
+                events = self._http.get(f"{_BASE}/events/{match_id}.json").json()
+                _cache_write("statsbomb-events", match_id, events)
+                source["events"] = "live"
+            else:
+                source["events"] = "cache"
+            result = self.to_events(
                 events,
                 home=meta["home_team"]["home_team_name"],
                 away=meta["away_team"]["away_team_name"],
                 match_id=str(match_id),
             )
+            result.provenance["fetch_source"] = source
+            return result
         except Exception:  # noqa: BLE001 — fail-soft
             return None
 

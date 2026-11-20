@@ -38,6 +38,8 @@ from typing import Any
 import httpx
 
 from src.events.schema import Event, EventType, Position, Team
+from src.ingest.cache import read as _cache_read
+from src.ingest.cache import write as _cache_write
 
 _DEFAULT_BASE = "https://api.sportmonks.com/v3/football"
 _CENTER = Position(x=60.0, y=40.0)  # pitch centre = "position unknown"
@@ -55,22 +57,30 @@ class SportmonksAdapter:
         self.base = os.getenv("SPORTMONKS_BASE", _DEFAULT_BASE).rstrip("/")
         self._http = httpx.Client(transport=transport, timeout=15.0)
 
-    def fetch(self, fixture_id: int | str) -> IngestResult | None:
-        """Live path — pull a fixture payload, then map. None on failure."""
+    def fetch(self, fixture_id: int | str, refresh: bool = False) -> IngestResult | None:
+        """Live path — pull a fixture payload, then map. None on failure.
+        Cached briefly (see cache.TTL) — a live fixture's timeline updates."""
         if not self.token:
             return None
         try:
-            resp = self._http.get(
-                f"{self.base}/fixtures/{fixture_id}",
-                params={
-                    "api_token": self.token,
-                    "include": "events;participants;statistics",
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json().get("data") or {}
+            data = None if refresh else _cache_read("sportmonks", f"fixture_{fixture_id}")
+            source = "cache"
+            if data is None:
+                resp = self._http.get(
+                    f"{self.base}/fixtures/{fixture_id}",
+                    params={
+                        "api_token": self.token,
+                        "include": "events;participants;statistics",
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json().get("data") or {}
+                _cache_write("sportmonks", f"fixture_{fixture_id}", data)
+                source = "live"
             data.setdefault("_fixture_id", fixture_id)
-            return self.to_events(data)
+            result = self.to_events(data)
+            result.provenance["fetch_source"] = {"fixture": source}
+            return result
         except Exception:  # noqa: BLE001 — fail-soft like the rest of the stack
             return None
 

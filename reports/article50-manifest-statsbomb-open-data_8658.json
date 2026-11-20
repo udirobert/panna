@@ -1,0 +1,1946 @@
+{
+  "match_id": "statsbomb-open-data_8658",
+  "seed": 137,
+  "generated_at": "2026-11-20T17:38:24+00:00",
+  "provenance": {
+    "commentary_source": "template",
+    "reasoning_source": "template",
+    "reasoning_model": null,
+    "data_source": {
+      "provider": "statsbomb-open-data",
+      "license": "CC-BY-4.0",
+      "match_id": "8658",
+      "home_team": "France",
+      "away_team": "Croatia",
+      "positions_estimated": true,
+      "reported_xg": {
+        "home": 1.098,
+        "away": 1.48
+      },
+      "unmapped_types": {
+        "Starting XI": 2,
+        "Half Start": 4,
+        "Ball Receipt*": 747,
+        "Duel": 16,
+        "Miscontrol": 33,
+        "Clearance": 37,
+        "Block": 33,
+        "Ball Recovery": 88,
+        "Dispossessed": 27,
+        "Foul Won": 27,
+        "Camera On": 34,
+        "Dribble": 28,
+        "Camera off": 5,
+        "Injury Stoppage": 6,
+        "Dribbled Past": 18,
+        "Own Goal Against": 1,
+        "Goal Keeper": 32,
+        "Shield": 2,
+        "Player Off": 1,
+        "Player On": 1,
+        "Half End": 4,
+        "Referee Ball-Drop": 2,
+        "Error": 1
+      },
+      "events_mapped": 1829,
+      "events_skipped": 1149,
+      "fetch_source": {
+        "matches": "cache",
+        "events": "cache"
+      }
+    }
+  },
+  "lines": [
+    {
+      "id": "ins_5ed02f9f",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "6 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:ppda",
+          "detail": "PPDA 3.03/2.34 vs claimed 3.03",
+          "expected": {
+            "Home": 3.03,
+            "Away": 2.34
+          },
+          "actual": 3.03
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 3.03",
+          "expected": "cited-fact value",
+          "actual": 3.03
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "40 chars",
+          "expected": "<= 240",
+          "actual": 40
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_1_f118",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 0.74",
+          "expected": "engine-recounted value",
+          "actual": 0.74
+        },
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 1.65",
+          "expected": "engine-recounted value",
+          "actual": 1.65
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "42 chars",
+          "expected": "<= 240",
+          "actual": 42
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_1_1316",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 3.03",
+          "expected": "engine-recounted value",
+          "actual": 3.03
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "54 chars",
+          "expected": "<= 240",
+          "actual": 54
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_5ed02f9f (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_1_e64a",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 2.34",
+          "expected": "engine-recounted value",
+          "actual": 2.34
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "54 chars",
+          "expected": "<= 240",
+          "actual": 54
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_b5f941ce (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_1_8b74",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 0.0",
+          "expected": "engine-recounted value",
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "56 chars",
+          "expected": "<= 240",
+          "actual": 56
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e4f26912 (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_1_4e41",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 0.0",
+          "expected": "engine-recounted value",
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "55 chars",
+          "expected": "<= 240",
+          "actual": 55
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_fbc9ae78 (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_b5f941ce",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "6 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:ppda",
+          "detail": "PPDA 3.03/2.34 vs claimed 2.34",
+          "expected": {
+            "Home": 3.03,
+            "Away": 2.34
+          },
+          "actual": 2.34
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 2.34",
+          "expected": "cited-fact value",
+          "actual": 2.34
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "40 chars",
+          "expected": "<= 240",
+          "actual": 40
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_a7cf739d",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "5 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:influence",
+          "detail": "top players {<Team.HOME: 'Home'>: 'Paul Pogba'}",
+          "expected": {
+            "Home": "Paul Pogba"
+          },
+          "actual": "Most influential Home player: Paul Pogba (4.8)"
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 4.8",
+          "expected": "cited-fact value",
+          "actual": 4.8
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "46 chars",
+          "expected": "<= 240",
+          "actual": 46
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_80378483",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "5 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:influence",
+          "detail": "top players {<Team.AWAY: 'Away'>: 'Ivan Peri\u0161i\u0107'}",
+          "expected": {
+            "Away": "Ivan Peri\u0161i\u0107"
+          },
+          "actual": "Most influential Away player: Ivan Peri\u0161i\u0107 (4.9)"
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 4.9",
+          "expected": "cited-fact value",
+          "actual": 4.9
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "48 chars",
+          "expected": "<= 240",
+          "actual": 48
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_4_6b18",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 4'",
+          "expected": "event minute",
+          "actual": 4
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "64 chars",
+          "expected": "<= 240",
+          "actual": 64
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_9_1de3",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 9'",
+          "expected": "event minute",
+          "actual": 9
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "61 chars",
+          "expected": "<= 240",
+          "actual": 61
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_16_a559",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 16'",
+          "expected": "event minute",
+          "actual": 16
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "59 chars",
+          "expected": "<= 240",
+          "actual": 59
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_16_e99f",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 16'",
+          "expected": "event minute",
+          "actual": 16
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "61 chars",
+          "expected": "<= 240",
+          "actual": 61
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_16_a6e6",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 16'",
+          "expected": "event minute",
+          "actual": 16
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "59 chars",
+          "expected": "<= 240",
+          "actual": 59
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_17_9cef",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "goal at 17'",
+          "expected": "event minute",
+          "actual": 17
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "41 chars",
+          "expected": "<= 240",
+          "actual": 41
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e4f26912 (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_20_057e",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 20'",
+          "expected": "event minute",
+          "actual": 20
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "52 chars",
+          "expected": "<= 240",
+          "actual": 52
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_313c45af (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_22_12d1",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 22'",
+          "expected": "event minute",
+          "actual": 22
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "59 chars",
+          "expected": "<= 240",
+          "actual": 59
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_23_6808",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 23'",
+          "expected": "event minute",
+          "actual": 23
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "52 chars",
+          "expected": "<= 240",
+          "actual": 52
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_313c45af (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_26_b495",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 26'",
+          "expected": "event minute",
+          "actual": 26
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "57 chars",
+          "expected": "<= 240",
+          "actual": 57
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_27_1953",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "goal at 27'",
+          "expected": "event minute",
+          "actual": 27
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "38 chars",
+          "expected": "<= 240",
+          "actual": 38
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_313c45af (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_31_2d43",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 31'",
+          "expected": "event minute",
+          "actual": 31
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "59 chars",
+          "expected": "<= 240",
+          "actual": 59
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_37_f8fd",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "goal at 37'",
+          "expected": "event minute",
+          "actual": 37
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "43 chars",
+          "expected": "<= 240",
+          "actual": 43
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e4f26912 (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_39_1290",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 39'",
+          "expected": "event minute",
+          "actual": 39
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "50 chars",
+          "expected": "<= 240",
+          "actual": 50
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_313c45af (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_313c45af",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "4 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:formation",
+          "detail": "Away 4-3-3 xG 0.0 vs claim [0.0]",
+          "expected": 0.0,
+          "actual": [
+            0.0
+          ]
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 0.0",
+          "expected": "cited-fact value",
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "43 chars",
+          "expected": "<= 240",
+          "actual": 43
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_41_5894",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 41'",
+          "expected": "event minute",
+          "actual": 41
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "61 chars",
+          "expected": "<= 240",
+          "actual": 61
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_41_afa8",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 41'",
+          "expected": "event minute",
+          "actual": 41
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "57 chars",
+          "expected": "<= 240",
+          "actual": 57
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_42_d953",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 42'",
+          "expected": "event minute",
+          "actual": 42
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "52 chars",
+          "expected": "<= 240",
+          "actual": 52
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_42_654e",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 42'",
+          "expected": "event minute",
+          "actual": 42
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "52 chars",
+          "expected": "<= 240",
+          "actual": 52
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e90a5eab (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_e90a5eab",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "8 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:xg_total",
+          "detail": "xG diff -0.906 vs claimed -0.906",
+          "expected": -0.906,
+          "actual": -0.906
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 0.74",
+          "expected": "cited-fact value",
+          "actual": 0.74
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 1.65",
+          "expected": "cited-fact value",
+          "actual": 1.65
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "28 chars",
+          "expected": "<= 240",
+          "actual": 28
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_43_aca8",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 43'",
+          "expected": "event minute",
+          "actual": 43
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "57 chars",
+          "expected": "<= 240",
+          "actual": 57
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_45_9294",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 45'",
+          "expected": "event minute",
+          "actual": 45
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "52 chars",
+          "expected": "<= 240",
+          "actual": 52
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_5d1762b7",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "0 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:momentum",
+          "detail": "swing 0.0 vs claimed 0.0",
+          "expected": 0.0,
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "recount:window",
+          "detail": "window 0'-10'",
+          "expected": "0'-10'",
+          "actual": "Biggest momentum swing: 0'-10' (+0.00 xG)"
+        },
+        {
+          "ok": true,
+          "kind": "stat",
+          "detail": "number 0.00",
+          "expected": "engine-recounted value",
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 0'",
+          "expected": "event minute",
+          "actual": 0
+        },
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 10'",
+          "expected": "event minute",
+          "actual": 10
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "41 chars",
+          "expected": "<= 240",
+          "actual": 41
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_46_21bc",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 46'",
+          "expected": "event minute",
+          "actual": 46
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "57 chars",
+          "expected": "<= 240",
+          "actual": 57
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_e4f26912 (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        },
+        {
+          "ok": true,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_fbc9ae78 (verified)",
+          "expected": "verified",
+          "actual": "verified"
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_46_2194",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 46'",
+          "expected": "event minute",
+          "actual": 46
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "59 chars",
+          "expected": "<= 240",
+          "actual": 59
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_47_0e27",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 47'",
+          "expected": "event minute",
+          "actual": 47
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "50 chars",
+          "expected": "<= 240",
+          "actual": 50
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_47_50a7",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 47'",
+          "expected": "event minute",
+          "actual": 47
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "52 chars",
+          "expected": "<= 240",
+          "actual": 52
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "com_47_3cc1",
+      "kind": "commentary",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "minute",
+          "detail": "minute 47'",
+          "expected": "event minute",
+          "actual": 47
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "67 chars",
+          "expected": "<= 240",
+          "actual": 67
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_e4f26912",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "4 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:formation",
+          "detail": "Home 4-3-3 xG 0.0 vs claim [0.0]",
+          "expected": 0.0,
+          "actual": [
+            0.0
+          ]
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 0.0",
+          "expected": "cited-fact value",
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "42 chars",
+          "expected": "<= 240",
+          "actual": 42
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_fbc9ae78",
+      "kind": "insight",
+      "verdict": "verified",
+      "reason": null,
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "4 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": true,
+          "kind": "recount:formation",
+          "detail": "no formation named \u2014 skipped",
+          "expected": null,
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "stat:attributed",
+          "detail": "number 0.0",
+          "expected": "cited-fact value",
+          "actual": 0.0
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "41 chars",
+          "expected": "<= 240",
+          "actual": 41
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "aired"
+    },
+    {
+      "id": "ins_planted_0",
+      "kind": "planted",
+      "verdict": "rejected",
+      "reason": "stat: number 3.48",
+      "checks": [
+        {
+          "ok": true,
+          "kind": "evidence",
+          "detail": "0 cited events exist",
+          "expected": "all ids real",
+          "actual": "ok"
+        },
+        {
+          "ok": false,
+          "kind": "stat",
+          "detail": "number 3.48",
+          "expected": "engine-recounted value",
+          "actual": 3.48
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "37 chars",
+          "expected": "<= 240",
+          "actual": 37
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        }
+      ],
+      "air_status": "suppressed"
+    },
+    {
+      "id": "com_planted_0",
+      "kind": "planted",
+      "verdict": "rejected",
+      "reason": "score: score 1-0 at 0'; linked_insight: rests on insight ins_planted_0 (rejected)",
+      "checks": [
+        {
+          "ok": false,
+          "kind": "score",
+          "detail": "score 1-0 at 0'",
+          "expected": [
+            0,
+            0
+          ],
+          "actual": [
+            1,
+            0
+          ]
+        },
+        {
+          "ok": true,
+          "kind": "language",
+          "detail": "no betting/certainty/real-world marks",
+          "expected": "clean",
+          "actual": null
+        },
+        {
+          "ok": true,
+          "kind": "length",
+          "detail": "39 chars",
+          "expected": "<= 240",
+          "actual": 39
+        },
+        {
+          "ok": true,
+          "kind": "causality",
+          "detail": "no unverifiable causal wording",
+          "expected": "descriptive",
+          "actual": null
+        },
+        {
+          "ok": false,
+          "kind": "linked_insight",
+          "detail": "rests on insight ins_planted_0 (rejected)",
+          "expected": "verified",
+          "actual": "rejected"
+        }
+      ],
+      "air_status": "suppressed"
+    }
+  ],
+  "summary": {
+    "gated_lines": 41,
+    "verdicts": {
+      "verified": 39,
+      "rejected": 2
+    },
+    "aired": 39,
+    "suppressed": 2,
+    "human_decisions": 2
+  },
+  "art50": {
+    "machine_readable_marking": "every line carries verdict + provenance; this manifest is the machine-readable mark set",
+    "human_editorial_review": [
+      {
+        "ts": 1795196304.485,
+        "type": "decision",
+        "id": "ins_planted_0",
+        "decision": "kill"
+      },
+      {
+        "ts": 1795196304.485,
+        "type": "decision",
+        "id": "com_planted_0",
+        "decision": "kill"
+      }
+    ],
+    "fail_closed_evidence": [
+      "com_planted_0",
+      "ins_planted_0"
+    ],
+    "audit_ledger": "reports/audit-statsbomb-open-data_8658.jsonl"
+  }
+}

@@ -39,9 +39,21 @@ from src.events.generator import MatchConfig, SyntheticMatchGenerator
 REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 
 
-def run_readiness(seed: int = 137, match_id: str = "match_art50") -> dict[str, Any]:
-    """Full match through the gate + one human-review exercise → manifest."""
-    events = SyntheticMatchGenerator(MatchConfig(match_id=match_id, seed=seed)).generate()
+def run_readiness(
+    seed: int = 137,
+    match_id: str = "match_art50",
+    events: list | None = None,
+    home: str = "Home FC",
+    away: str = "Away United",
+    data_provenance: dict | None = None,
+) -> dict[str, Any]:
+    """Full match through the gate + one human-review exercise → manifest.
+
+    ``events=None`` runs the synthetic engine; pass an ingested real ledger
+    (``src.ingest``) to produce the artifact against licensed/open data —
+    ``data_provenance`` then carries the feed's source into the manifest."""
+    if events is None:
+        events = SyntheticMatchGenerator(MatchConfig(match_id=match_id, seed=seed)).generate()
     result = DirectorAgent().run({"events": events})
 
     audit_path = REPORTS_DIR / f"audit-{match_id}.jsonl"
@@ -51,8 +63,8 @@ def run_readiness(seed: int = 137, match_id: str = "match_art50") -> dict[str, A
     session = MatchSession(
         match_id=match_id,
         seed=seed,
-        home_team="Home FC",
-        away_team="Away United",
+        home_team=home,
+        away_team=away,
         events=events,
         result=result,
         audit=ledger,
@@ -120,6 +132,7 @@ def run_readiness(seed: int = 137, match_id: str = "match_art50") -> dict[str, A
             "commentary_source": result.get("commentary_source", "template"),
             "reasoning_source": result.get("reasoning_source", "template"),
             "reasoning_model": result.get("reasoning_model"),
+            "data_source": data_provenance or "synthetic",
         },
         "lines": lines,
         "summary": {
