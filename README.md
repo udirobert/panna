@@ -15,6 +15,8 @@ deterministic from its seed, so any shared URL replays the same game.
 **For judges:** [docs/JUDGES.md](docs/JUDGES.md) is the 3-minute path ·
 [docs/PROOF.md](docs/PROOF.md) is the trust architecture ·
 [docs/CLAIMS.md](docs/CLAIMS.md) is the honest real-vs-staged ledger ·
+[docs/post-hackathon-strategy.md](docs/post-hackathon-strategy.md) is where
+the verified/trusted-AI market opportunity is mapped (EU AI Act Art 50 + EAA) ·
 `GET /status` reports it live.
 
 ## Hackathon details
