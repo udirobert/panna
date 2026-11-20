@@ -123,6 +123,13 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
 - **Producer console** — `/producer?match={id}` lists every line, verdict,
   and air status; approve/kill is real (`/producer/{match}/decide`). Red-team
   demo built in: one click plants fabricated lines and watches them held.
+- **Audit ledger** — every verdict, air/suppress outcome, and producer
+  decision appends to JSONL (`src/audit.py`, `PANNA_AUDIT_PATH`) so "what
+  aired, what was held, who approved it?" is answerable after the process
+  dies. Fail-soft: an audit write can never take the broadcast down.
+- **Spoken audio** — `POST /audio/speak` voices a verified line through
+  Azure AI Speech (key or Entra). Unconfigured it 503s honestly; the
+  always-on text AD feed remains the fallback. `src/foundry/speech.py`.
 - **Feeds for every fan** — each SSE connection renders the verified
   broadcast for its viewer (`src/feed.py`): `?lang=es|fr|pt|de` localizes via
   Azure AI Translator (`src/foundry/translate.py`, key or Entra auth,

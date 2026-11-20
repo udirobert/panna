@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.agents.director import DirectorAgent
+from src.audit import load_audit_ledger
 from src.events.frames import event_frame
 from src.events.schema import Event, Team
 
@@ -146,6 +147,7 @@ class MatchSession:
     killed: set[str] = field(default_factory=set)  # items a producer killed outright
     viewers: int = 0
     auto_paused: bool = False  # matchday pauses when nobody watches — no wasted tokens
+    audit: Any = None  # AuditLedger — verdicts, air outcomes, human decisions
 
     def __post_init__(self) -> None:
         self.timeline = _build_timeline(self.events, self.result)
@@ -158,6 +160,30 @@ class MatchSession:
         # per-match translation cache shared by every connected feed so two
         # viewers in the same language never pay twice for the same line
         self.translation_cache: dict[tuple[str, str], str] = {}
+        if self.audit is not None:
+            self.audit.record(
+                {
+                    "type": "session_start",
+                    "match_id": self.match_id,
+                    "events": len(self.events),
+                    "health": self.result.get("health", {}),
+                }
+            )
+            for at, kind, _owner, payload in self.timeline:
+                if kind not in ("insight", "commentary"):
+                    continue
+                v = payload.get("verification") or {}
+                self.audit.record(
+                    {
+                        "type": "verdict",
+                        "id": self._item_id(kind, payload),
+                        "kind": kind,
+                        "at": at,
+                        "status": v.get("status"),
+                        "reason": v.get("reason"),
+                        "checks": v.get("checks") or [],
+                    }
+                )
         self.events_by_id = {e.id: e for e in self.events}
 
     # ---- control ----------------------------------------------------------
@@ -244,6 +270,8 @@ class MatchSession:
 
     def decide(self, item_id: str, decision: str) -> dict:
         """Approve a held line (it airs at the next beat) or kill it for good."""
+        if self.audit is not None:
+            self.audit.record({"type": "decision", "id": item_id, "decision": decision})
         if decision == "approve":
             self.approved.add(item_id)
             self.killed.discard(item_id)
@@ -353,10 +381,28 @@ class MatchSession:
                 self._pending.append((at, kind, owner, payload))
                 continue
             if not self._airable(kind, payload):
+                if self.audit is not None:
+                    self.audit.record(
+                        {
+                            "type": "suppressed",
+                            "id": self._item_id(kind, payload),
+                            "kind": kind,
+                            "at": at,
+                        }
+                    )
                 continue  # held by the verifier gate or killed by the producer
             if kind == "event":
                 batch.append(payload)
             else:
+                if self.audit is not None and kind in ("insight", "commentary"):
+                    self.audit.record(
+                        {
+                            "type": "aired",
+                            "id": self._item_id(kind, payload),
+                            "kind": kind,
+                            "at": at,
+                        }
+                    )
                 frames.append((kind, payload))
         if batch:
             frames.insert(0, ("events", {"batch": batch}))
@@ -518,6 +564,7 @@ def get_or_create_session(
             away_team=away_team,
             events=events,
             result=result,
+            audit=load_audit_ledger(),
         )
         session.epoch = next(_EPOCHS)
         _SESSIONS[match_id] = session

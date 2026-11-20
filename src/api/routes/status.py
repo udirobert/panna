@@ -12,6 +12,7 @@ from fastapi import APIRouter
 
 from src.api.session import _SESSIONS  # noqa: SLF001
 from src.foundry.client import get_client
+from src.foundry.speech import get_speech
 from src.foundry.tracing import spans_for, summary_for
 from src.foundry.translate import AUDIENCES, LANGUAGES, get_translator
 
@@ -39,6 +40,7 @@ def _session_cost(match_id: str) -> dict:
 def status() -> dict:
     client = get_client()
     translator = get_translator()
+    speech = get_speech()
     sessions = {}
     for mid, sess in _SESSIONS.items():
         sessions[mid] = {
@@ -79,10 +81,20 @@ def status() -> dict:
                     "text labelled translation=original"
                 ),
             },
+            "speech": {
+                "available": speech.available,
+                "auth_mode": speech.auth_mode,
+                "voice": speech.voice,
+                "chars_sent": speech.chars_sent,
+                "note": (
+                    "POST /audio/speak voices verified lines; when "
+                    "unconfigured it 503s honestly and the always-on "
+                    "text AD feed is the fallback"
+                ),
+            },
         },
         "staged": {
             "event_hubs": "described in docs/CLAIMS.md — stream is in-process SSE",
-            "azure_speech": "spoken-word audio track staged; text AD feed is live",
         },
         "sessions": sessions,
     }

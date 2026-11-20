@@ -57,3 +57,6 @@ temp/
 # Next.js
 frontend/.next/
 frontend/out/
+
+# Runtime audit ledger (generated)
+reports/audit.jsonl

@@ -10,6 +10,10 @@ produces):
 - ``wrong_minute``    — a goal claimed at a minute no goal happened
 - ``fabricated_score``— a scoreline the running ledger contradicts
 - ``ghost_event``     — evidence ids pointing at events that don't exist
+- ``banned_language`` — a real-world league mark / betting term in the copy
+- ``causal_wording``  — "cost them" causality with no counterfactual evidence
+- ``unattributed_number`` — a real ledger number bound to the wrong evidence
+- ``long_line``       — broadcast copy over the 240-char house-style cap
 
 Each planted line goes through the real ``VerifierAgent`` — the same gate the
 broadcast uses. The report counts caught/missed per class plus the honest-line
@@ -45,6 +49,24 @@ def _planted_lines(events: list, facts: _Facts) -> list[tuple[str, Insight | Com
         m for m in range(1, 89) if all(abs(m - g) > 1 for g in facts.goal_minutes)
     )
     h, a = facts.score_at(90)
+    # a real ledger number that is NOT attributable to the cited event:
+    # another event's xG, provided it isn't an engine stat either
+    goal_xg = (
+        round(float(goal.metadata["xg"]), 3)
+        if isinstance(goal.metadata.get("xg"), int | float)
+        else None
+    )
+    unattributable = next(
+        (
+            float(e.metadata["xg"])
+            for e in events
+            if e.id != goal.id
+            and isinstance(e.metadata.get("xg"), int | float)
+            and round(float(e.metadata["xg"]), 3) != goal_xg
+            and round(float(e.metadata["xg"]), 3) not in facts._stat_float_set()
+        ),
+        0.313,
+    )
 
     return [
         (
@@ -105,6 +127,48 @@ def _planted_lines(events: list, facts: _Facts) -> list[tuple[str, Insight | Com
                 value=0.8,
                 confidence=0.8,
                 evidence=["evt_9999", "evt_0000"],
+            ),
+        ),
+        (
+            "banned_language",
+            CommentaryEntry(
+                id="rt_banned",
+                minute=goal.minute,
+                second=45,
+                text="A finish worthy of the Premier League itself!",
+            ),
+        ),
+        (
+            "causal_wording",
+            CommentaryEntry(
+                id="rt_causal",
+                minute=goal.minute + 5,
+                second=15,
+                text="That opener is why they lead — the early press cost them control.",
+            ),
+        ),
+        (
+            "unattributed_number",
+            Insight(
+                id="rt_unattributed",
+                type="key_moment",
+                claim=f"The strike carried {unattributable:.2f} xG",
+                value=unattributable,
+                confidence=0.9,
+                evidence=[goal.id],
+            ),
+        ),
+        (
+            "long_line",
+            CommentaryEntry(
+                id="rt_long",
+                minute=60,
+                second=0,
+                text="An extraordinary sequence of play as the move builds "
+                "patiently through midfield, each pass finding its man, "
+                "the crowd rising as one while the defence retreats deeper "
+                "and deeper until finally the decisive ball arrives — "
+                "and still they keep going, relentless, magnificent.",
             ),
         ),
     ]

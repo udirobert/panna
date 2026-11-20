@@ -27,15 +27,17 @@ demo.
 | Clean-language gate | `_BANNED_RE` in `src/agents/verifier.py` | betting terms, certainty claims and real-world league marks are rejected outright, never repairable |
 | Wording-strength gate | `_CAUSAL_RE` in `src/agents/verifier.py` | causal claims ("because", "cost them") need counterfactual evidence we don't produce — fail closed until a sim model exists |
 | Number attribution | `event_xg_set` in `src/agents/verifier.py` | insights that cite evidence must source their decimals from the cited events or engine stats, not anywhere in the ledger |
+| Audit ledger | `src/audit.py` | every verdict, air/suppress outcome and producer decision appended to JSONL (`PANNA_AUDIT_PATH`, default `reports/audit.jsonl`, `PANNA_AUDIT=off` disables); fail-soft — audit can never break the broadcast |
+| Spoken audio | `src/foundry/speech.py`, `POST /audio/speak` | real when `SPEECH_KEY`+`SPEECH_REGION` (or `SPEECH_AUTH=entra`) is configured; 503s honestly otherwise, text AD feed is the always-on fallback |
 
 ## Staged — described, not wired (yet)
 
 | Component | Status |
 |---|---|
 | Azure Event Hubs ingestion | Stream is the in-process SSE clock; Event Hubs is the swap-in transport for real feeds |
-| Azure AI Speech | Spoken-word audio of the AD/commentary tracks; the text AD feed above is already live |
 | Translator service account | The client + caching + fallbacks are wired and tested; needs a Translator resource (key or Entra) in the environment |
-| Persistent audit ledger | Verdicts + decisions are in-process on the session; a durable store (Cosmos/Postgres) is the next step |
+| Speech service account | The client + `/audio/speak` route are wired and tested; needs a Speech resource (key or Entra) in the environment |
+| Durable audit store | `src/audit.py` is file-backed JSONL today; Cosmos/Postgres behind the same `AuditLedger` protocol is the next step |
 | Multi-match matchday | Sessions are per-match; a Personal Director across matches is the natural extension |
 
 ## Explicitly out of scope

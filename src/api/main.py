@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes import (
     agentic,
+    audio,
     commentary,
     events,
     insights,
@@ -38,6 +39,7 @@ app.include_router(agentic.router, prefix="/agentic", tags=["agentic"])
 app.include_router(share.router, prefix="/share", tags=["share"])
 app.include_router(producer.router, prefix="/producer", tags=["producer"])
 app.include_router(status.router, prefix="/status", tags=["status"])
+app.include_router(audio.router, prefix="/audio", tags=["audio"])
 
 
 @app.get("/health")
