@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from src.events.generator import MatchConfig, SyntheticMatchGenerator
 
@@ -8,6 +9,7 @@ router = APIRouter()
 
 _MATCHES: dict[str, list] = {}
 _CONFIGS: dict[str, MatchConfig] = {}
+_PROVENANCE: dict[str, dict] = {}
 
 
 def _prebuild_session(cfg: MatchConfig) -> None:
@@ -43,6 +45,53 @@ def generate(match_id: str = "match_001", seed: int = 42) -> dict:
     return {"match_id": match_id, "event_count": len(events)}
 
 
+class IngestBody(BaseModel):
+    provider: str = "statsbomb"
+    match_id: str = ""
+    competition_id: int = 43
+    season_id: int = 3
+    fixture_id: str = ""
+    refresh: bool = False
+
+
+@router.post("/ingest")
+def ingest(body: IngestBody) -> dict:
+    """Load a real provider match so the whole broadcast pipeline — stream,
+    producer console, feeds — runs on licensed/open data. The match_id it
+    returns (``sb_*``/``sm_*``) resolves like any generated match."""
+    from src.ingest import SportmonksAdapter, StatsBombAdapter
+
+    if body.provider == "statsbomb":
+        if not body.match_id:
+            raise HTTPException(400, "statsbomb needs match_id")
+        result = StatsBombAdapter().fetch(
+            body.competition_id, body.season_id, int(body.match_id), refresh=body.refresh
+        )
+        real_id = f"sb_{body.match_id}"
+    else:
+        if not body.fixture_id:
+            raise HTTPException(400, "sportmonks needs fixture_id")
+        result = SportmonksAdapter().fetch(body.fixture_id, refresh=body.refresh)
+        real_id = f"sm_{body.fixture_id}"
+    if result is None:
+        raise HTTPException(502, "provider fetch failed — no token, no network, or unknown id")
+    prov = result.provenance
+    _MATCHES[real_id] = result.events
+    _PROVENANCE[real_id] = prov
+    _CONFIGS[real_id] = MatchConfig(
+        match_id=real_id,
+        seed=0,
+        home_team=prov.get("home_team") or "Home",
+        away_team=prov.get("away_team") or "Away",
+    )
+    _prebuild_session(_CONFIGS[real_id])
+    return {
+        "match_id": real_id,
+        "event_count": len(result.events),
+        "provenance": prov,
+    }
+
+
 @router.get("/resolve/{match_id}")
 def resolve(match_id: str) -> dict:
     """Make a match live and return its identity.
@@ -51,7 +100,11 @@ def resolve(match_id: str) -> dict:
     a URL like ``/share?seed=137`` boots *any* visitor into the identical
     match. ``resolve`` guarantees the match exists (regenerating from its seed
     if the process restarted) and reports the seed so the frontend can echo it.
+    Real-match ids (``sb_*``/``sm_*``) must be ingested first — silently
+    generating a synthetic match under a real id would lie about the data.
     """
+    if (match_id.startswith("sb_") or match_id.startswith("sm_")) and match_id not in _CONFIGS:
+        raise HTTPException(404, "real match not ingested — POST /matches/ingest first")
     cfg = _CONFIGS.get(match_id)
     if cfg is None:
         # derive seed from a "match_<seed>" id, else default
@@ -72,6 +125,7 @@ def resolve(match_id: str) -> dict:
         "home_team": cfg.home_team,
         "away_team": cfg.away_team,
         "event_count": len(_MATCHES[match_id]),
+        "data_source": _PROVENANCE.get(match_id, "synthetic"),
     }
 
 

@@ -164,8 +164,12 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
   finished-match event files are immutable so they cache forever, indexes
   24h, live fixtures 5m; `fetch_source` in provenance says cache vs live,
   `--refresh` bypasses). `panna-run ingest --provider statsbomb --match-id
-  8658` (live, free) or `--file payload.json`; `panna-run compliance --real
-  --match-id 8658` produces the Article 50 artifact from a real match.
+  8658` (live, free) or `--file payload.json`; `panna-run run --real` runs
+  the pipeline over a real match, `panna-run compliance --real` produces
+  the Article 50 artifact from it, and `POST /matches/ingest` loads one so
+  the broadcast UI / stream / producer console play it back — resolving
+  an `sb_*`/`sm_*` id without ingesting first is an honest 404, never a
+  synthetic match wearing a real id.
 - **Cost guard + ledger** — the matchday auto-pauses when the last viewer
   disconnects and resumes when one returns (agents only spend when watched);
   `GET /status` reports per-match tokens + estimated spend.

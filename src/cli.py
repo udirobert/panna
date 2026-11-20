@@ -19,9 +19,20 @@ from src.events.generator import MatchConfig, SyntheticMatchGenerator
 
 
 def _run(args: argparse.Namespace) -> None:
-    cfg = MatchConfig(match_id=args.match_id, seed=args.seed)
-    events = SyntheticMatchGenerator(cfg).generate()
-    print(f"Generated {len(events)} events")
+    if getattr(args, "real", False):
+        real = _resolve_ingest(args)
+        if real is None:
+            print("no data — statsbomb needs --match-id; sportmonks needs a token")
+            return
+        events, prov = real.events, real.provenance
+        print(
+            f"Ingested {len(events)} events — {prov.get('home_team')} v "
+            f"{prov.get('away_team')} ({prov['provider']})"
+        )
+    else:
+        cfg = MatchConfig(match_id=args.match_id, seed=args.seed)
+        events = SyntheticMatchGenerator(cfg).generate()
+        print(f"Generated {len(events)} events")
 
     director = DirectorAgent()
     result = director.run({"events": events})
@@ -172,7 +183,9 @@ def main() -> None:
     p.add_argument("--match-id", default="match_001")
     p.add_argument("--seed", type=int, default=42)
     sub = p.add_subparsers(dest="cmd")
-    sub.add_parser("run")
+    runp = sub.add_parser("run")
+    runp.add_argument("--real", action="store_true", help="ingest a real feed instead of synthetic")
+    _add_ingest_args(runp)
     rt = sub.add_parser("redteam")
     rt.add_argument("--seed", type=int, default=137)
     comp = sub.add_parser("compliance")
