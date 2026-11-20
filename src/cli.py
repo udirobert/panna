@@ -49,6 +49,16 @@ def _redteam(args: argparse.Namespace) -> None:
     print(f"\nReport written to {path}")
 
 
+def _compliance(args: argparse.Namespace) -> None:
+    from src.compliance import run_readiness, write_manifest, write_report
+
+    report = run_readiness(seed=args.seed, match_id=args.match_id)
+    md = write_report(report)
+    manifest = write_manifest(report)
+    print(json.dumps(report["summary"], indent=2))
+    print(f"\nReport: {md}\nManifest: {manifest}")
+
+
 def _evaluate(args: argparse.Namespace) -> None:
     """Scorecard: detection coverage + verification + determinism."""
     events = SyntheticMatchGenerator(MatchConfig(match_id=args.match_id, seed=args.seed)).generate()
@@ -92,10 +102,15 @@ def main() -> None:
     sub.add_parser("run")
     rt = sub.add_parser("redteam")
     rt.add_argument("--seed", type=int, default=137)
+    comp = sub.add_parser("compliance")
+    comp.add_argument("--seed", type=int, default=137)
+    comp.add_argument("--match-id", default="match_art50")
     sub.add_parser("evaluate")
     args = p.parse_args()
 
-    {"redteam": _redteam, "evaluate": _evaluate}.get(args.cmd, _run)(args)
+    {"redteam": _redteam, "compliance": _compliance, "evaluate": _evaluate}.get(args.cmd, _run)(
+        args
+    )
 
 
 if __name__ == "__main__":
