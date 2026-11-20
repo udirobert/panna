@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import type { Insight, Lens } from "../lib/types";
 
 type Props = {
@@ -42,6 +43,65 @@ function ConfDial({ value }: { value: number }) {
   );
 }
 
+function VerdictChip({ insight }: { insight: Insight }) {
+  const [open, setOpen] = useState(false);
+  const v = insight.verification;
+  if (!v) return null;
+  const color =
+    v.status === "verified" ? "var(--ok)" : v.status === "repaired" ? "var(--warn)" : "var(--down)";
+  return (
+    <span style={{ marginLeft: 6 }}>
+      <button
+        type="button"
+        className="why-btn"
+        style={{
+          background: "none",
+          border: `1px solid ${color}`,
+          color,
+          borderRadius: 4,
+          padding: "0 6px",
+          fontSize: 10,
+          letterSpacing: "0.08em",
+          cursor: "pointer",
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+      >
+        {v.status === "verified" ? "✓ verified" : v.status === "repaired" ? "✎ repaired" : "✕ rejected"} · why?
+      </button>
+      {open && (
+        <div
+          className="why-panel"
+          style={{
+            display: "block",
+            marginTop: 4,
+            padding: "6px 8px",
+            background: "rgba(0,0,0,0.25)",
+            borderRadius: 4,
+            fontSize: 11,
+            lineHeight: 1.5,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {v.repair_of && (
+            <div className="muted" style={{ marginBottom: 4 }}>
+              aired as: <s style={{ opacity: 0.7 }}>{v.repair_of}</s>
+            </div>
+          )}
+          {v.reason && <div style={{ color, marginBottom: 4 }}>{v.reason}</div>}
+          {v.checks.map((c, i) => (
+            <div key={i} className={c.ok ? "muted" : ""} style={c.ok ? {} : { color: "var(--down)" }}>
+              {c.ok ? "✓" : "✕"} {c.detail}
+            </div>
+          ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
 export default function InsightStrips({ insights, lens, activeId, onSelect }: Props) {
   const visible = insights.filter(LENS_FILTER[lens]).slice(-12).reverse();
   return (
@@ -70,9 +130,15 @@ export default function InsightStrips({ insights, lens, activeId, onSelect }: Pr
                 {eid}
               </span>
             ))}
+            <VerdictChip insight={i} />
             {i.recovered && (
               <span className="muted" style={{ color: "var(--warn)", marginLeft: 6 }}>
                 ↺ recovered by peers
+              </span>
+            )}
+            {i.approved && (
+              <span className="muted" style={{ color: "var(--ok)", marginLeft: 6 }}>
+                ✓ producer approved
               </span>
             )}
           </div>

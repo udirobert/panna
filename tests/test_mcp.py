@@ -26,6 +26,7 @@ def test_server_exposes_the_toolkit():
         "team_summary",
         "match_insights",
         "event_details",
+        "verify_line",
     }
     for t in tools.tools:
         # every tool carries a schema a client can render
@@ -69,6 +70,34 @@ def test_event_details_fetches_by_id():
     out = _call("event_details", match_id="match_42", event_ids=ids)
     assert len(out["found"]) == len(ids)
     assert {e["id"] for e in out["found"]} == set(ids)
+
+
+def test_verify_line_audits_text():
+    """The auditor, callable from any MCP client: a true stat verifies,
+    a fabricated one is refused."""
+    goal = None
+    offset = 0
+    while goal is None:
+        page = _call("match_events", match_id="match_v9", limit=500, offset=offset)
+        goal = next((e for e in page["events"] if e["type"] == "goal"), None)
+        offset += len(page["events"])
+        if offset >= page["total"]:
+            break
+    assert goal is not None
+    good = _call(
+        "verify_line",
+        match_id="match_v9",
+        text=f"GOAL! {goal['player']} at {goal['minute']}'",
+        minute=goal["minute"],
+    )
+    assert good["verdict"]["status"] == "verified"
+    bad = _call(
+        "verify_line",
+        match_id="match_v9",
+        text="A 99.99 km/h rocket! It's now 7-7.",
+        minute=45,
+    )
+    assert bad["verdict"]["status"] == "rejected"
 
 
 def test_unknown_tool_reports_error():

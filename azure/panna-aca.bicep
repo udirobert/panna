@@ -1,6 +1,11 @@
 // Panna — Azure Container Apps: API service (event-driven, autoscaling)
 // Deploy with:  ./azure/deploy.sh   (builds, pushes, provisions, prints endpoint)
 // Self-contained module: pass environmentName + image, optionally Foundry + frontend params.
+//
+// Keyless by default — the winners' standard. The container app runs under a
+// system-assigned managed identity; when `foundryAccountName` is provided it is
+// granted "Cognitive Services OpenAI User" on that account, and the app mints
+// Entra tokens at runtime via DefaultAzureCredential. No secrets are stored.
 
 @description('Short environment name (lowercase, no hyphens)')
 param environmentName string
@@ -11,22 +16,29 @@ param location string = resourceGroup().location
 @description('Container image reference (built & pushed by azd, e.g. registry.azurecr.io/panna/api:tag)')
 param image string
 
-// Foundry / Azure OpenAI — supplied at deploy via azd config env vars (never committed)
+// Foundry / Azure OpenAI — endpoint + deployment; auth is the managed identity
 param foundryEndpoint string = ''
 param foundryDeployment string = 'gpt-5.4'
 param foundryApiVersion string = '2025-03-01-preview'
-@secure()
-param foundryApiKey string = ''
+
+@description('Name of the Azure OpenAI / Foundry account to grant the identity access to (empty = no grant)')
+param foundryAccountName string = ''
 
 // Where the shareable case-file poster should point its "replay" button
 param frontendOrigin string = ''
 
 var caName = 'panna-${environmentName}'
 
+// Cognitive Services OpenAI User — lets the identity call chat completions
+var openAiUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+
 resource ca 'Microsoft.App/containerApps@2024-03-01' = {
   name: caName
   location: location
-  properties:
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
     workloadProfiles: [
       {
         name: 'default'
@@ -53,10 +65,6 @@ resource ca 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'FOUNDRY_ENDPOINT'
               value: foundryEndpoint
-            }
-            {
-              name: 'FOUNDRY_API_KEY'
-              secureRef: { secretName: 'foundryApiKey' }
             }
             {
               name: 'FOUNDRY_DEPLOYMENT'
@@ -117,14 +125,27 @@ resource ca 'Microsoft.App/containerApps@2024-03-01' = {
     ]
 }
 
-// Secret for the Foundry API key — value passed in from azd at deploy time
-resource secret 'Microsoft.App/containerApps/secrets@2024-03-01' = {
-  name: 'foundryApiKey'
-  parent: ca
-  properties: {
-    value: foundryApiKey
+// Grant the app's managed identity OpenAI access on the Foundry account —
+// keyless end to end, exactly what the winning submissions standardized on.
+resource foundryAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing =
+  if (foundryAccountName != '') {
+    name: foundryAccountName
   }
-}
+
+resource openAiRole 'Microsoft.Authorization/roleAssignments@2022-04-01' =
+  if (foundryAccountName != '') {
+    name: guid(foundryAccount.id, ca.id, openAiUserRoleId)
+    scope: foundryAccount
+    properties: {
+      roleDefinitionId: subscriptionResourceId(
+        'Microsoft.Authorization/roleDefinitions',
+        openAiUserRoleId
+      )
+      principalId: ca.identity.principalId
+      principalType: 'ServicePrincipal'
+    }
+  }
 
 output apiEndpoint string = ca.properties.ingress.fqdn
 output containerAppName string = caName
+output principalId string = ca.identity.principalId

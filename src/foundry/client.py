@@ -19,6 +19,7 @@ class FoundryClient:
         self.deployment = os.getenv("FOUNDRY_DEPLOYMENT", "gpt-5.4")
         self.api_key = os.getenv("FOUNDRY_API_KEY", "")
         self.api_version = os.getenv("FOUNDRY_API_VERSION", "2025-03-01-preview")
+        self.auth_mode = "none"  # none | api-key | entra
         self._client = None
         if self.endpoint and self.api_key:
             try:
@@ -29,6 +30,27 @@ class FoundryClient:
                     api_key=self.api_key,
                     api_version=self.api_version,
                 )
+                self.auth_mode = "api-key"
+            except Exception:  # noqa: BLE001
+                self._client = None
+        elif self.endpoint:
+            # Keyless path — the winners' standard: managed identity /
+            # DefaultAzureCredential mints Entra tokens, nothing stored.
+            try:
+                from openai import AzureOpenAI
+
+                from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+                provider = get_bearer_token_provider(
+                    DefaultAzureCredential(),
+                    "https://cognitiveservices.azure.com/.default",
+                )
+                self._client = AzureOpenAI(
+                    azure_endpoint=self.endpoint,
+                    azure_ad_token_provider=provider,
+                    api_version=self.api_version,
+                )
+                self.auth_mode = "entra"
             except Exception:  # noqa: BLE001
                 self._client = None
 

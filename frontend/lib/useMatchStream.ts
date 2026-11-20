@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useReducer, useRef } from "react";
-import { streamUrl } from "./api";
+import { streamUrl, type FeedOptions } from "./api";
 import {
   initialState,
   type MatchState,
@@ -136,7 +136,11 @@ export function toEventFrame(e: any): EventFrame {
   };
 }
 
-export function useMatchStream(matchId: string | null, seed: number) {
+export function useMatchStream(
+  matchId: string | null,
+  seed: number,
+  feed: FeedOptions = {},
+) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const esRef = useRef<EventSource | null>(null);
 
@@ -164,7 +168,7 @@ export function useMatchStream(matchId: string | null, seed: number) {
 
   useEffect(() => {
     if (!matchId) return;
-    const es = new EventSource(streamUrl(matchId));
+    const es = new EventSource(streamUrl(matchId, true, feed));
     esRef.current = es;
     es.addEventListener("snapshot", (e) => {
       const snap = parseData((e as MessageEvent).data);
@@ -203,7 +207,7 @@ export function useMatchStream(matchId: string | null, seed: number) {
       if (d) dispatch({ type: "full_time", home: d.home ?? 0, away: d.away ?? 0 });
     });
     return () => es.close();
-  }, [matchId]);
+  }, [matchId, feed.lang, feed.audience]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return state;
 }

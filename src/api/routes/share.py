@@ -99,9 +99,9 @@ def share(match_id: str) -> HTMLResponse:
     )
 
     rows = "".join(
-        f'<div class="row"><span class="tag">E{i+1}</span>'
+        f'<div class="row"><span class="tag">E{i + 1}</span>'
         f'<span>{html.escape(x.claim)} <span style="color:#7d9187">'
-        f"({round(x.confidence*100)}% · {len(x.evidence)} evidence)</span></span></div>"
+        f"({round(x.confidence * 100)}% · {len(x.evidence)} evidence)</span></span></div>"
         for i, x in enumerate(top)
     )
     goal_rows = "".join(

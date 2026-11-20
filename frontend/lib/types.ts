@@ -24,6 +24,23 @@ export type Detection = {
   recovered?: boolean;
 };
 
+export type VerdictCheck = {
+  ok: boolean;
+  kind: string;
+  detail: string;
+  expected: unknown;
+  actual: unknown;
+};
+
+export type Verdict = {
+  item_id: string;
+  kind: string;
+  status: "verified" | "repaired" | "rejected";
+  reason: string | null;
+  checks: VerdictCheck[];
+  repair_of: string | null;
+};
+
 export type Insight = {
   id: string;
   type: string;
@@ -35,15 +52,27 @@ export type Insight = {
   timestamp: string;
   reveal_minute: number;
   recovered?: boolean;
+  approved?: boolean;
+  verification?: Verdict | null;
 };
 
 export type Commentary = {
+  id?: string;
   minute: number;
   second: number;
   text: string;
   tone: string;
   insight_ids: string[];
   recovered?: boolean;
+  approved?: boolean;
+  verification?: Verdict | null;
+};
+
+export type VerificationSummary = {
+  checked: number;
+  verified: number;
+  repaired: number;
+  rejected: number;
 };
 
 export type GoalFrame = {
@@ -83,6 +112,10 @@ export type Snapshot = {
   key_moments: Detection[];
   insights: Insight[];
   commentary: Commentary[];
+  held?: (Insight | Commentary)[];
+  verification?: VerificationSummary;
+  viewers?: number;
+  auto_paused?: boolean;
   commentary_source?: "foundry" | "template";
   reasoning_source?: "foundry" | "template";
   reasoning_model?: string | null;

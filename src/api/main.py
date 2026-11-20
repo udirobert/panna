@@ -5,7 +5,18 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import agentic, commentary, events, insights, matches, recap, share, stream
+from src.api.routes import (
+    agentic,
+    commentary,
+    events,
+    insights,
+    matches,
+    producer,
+    recap,
+    share,
+    status,
+    stream,
+)
 from src.foundry.client import get_client
 
 app = FastAPI(title="Panna", version="0.1.0", description="AI-driven match intelligence")
@@ -25,6 +36,8 @@ app.include_router(recap.router, prefix="/recap", tags=["recap"])
 app.include_router(stream.router, prefix="/stream", tags=["stream"])
 app.include_router(agentic.router, prefix="/agentic", tags=["agentic"])
 app.include_router(share.router, prefix="/share", tags=["share"])
+app.include_router(producer.router, prefix="/producer", tags=["producer"])
+app.include_router(status.router, prefix="/status", tags=["status"])
 
 
 @app.get("/health")

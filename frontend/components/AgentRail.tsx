@@ -46,9 +46,23 @@ export default function AgentRail({ failed, onToggleFail, onReset, resetArmed }:
           </button>
         );
       })}
+      <div
+        className="agent-row"
+        style={{ opacity: 0.9 }}
+        title="the Verifier — deterministic recount code, not a model. It can't be darkened."
+      >
+        <span className="dot" style={{ background: "var(--gold)" }} />
+        <span className="display" style={{ fontWeight: 700 }}>
+          GATE
+        </span>
+        <span className="muted" style={{ letterSpacing: "0.02em" }}>
+          the recount — code, not a model
+        </span>
+      </div>
       <div className="muted" style={{ fontSize: 10.5, lineHeight: 1.5, marginTop: 2 }}>
         Specialists write chalk traces to the shared board. Darken one and its work is
-        preserved — peers converge on the traces and finish it.
+        preserved — peers converge on the traces and finish it. The gate can't be
+        darkened: every line is recounted from the event ledger before it may air.
       </div>
       <button
         className={`btn${resetArmed ? "" : ""}`}

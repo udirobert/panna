@@ -141,13 +141,24 @@ class MatchSession:
     # failure choreography
     failed: set[str] = field(default_factory=set)
 
+    # producer gate + cost guard (the winners' patterns)
+    approved: set[str] = field(default_factory=set)  # held items cleared by a human
+    killed: set[str] = field(default_factory=set)  # items a producer killed outright
+    viewers: int = 0
+    auto_paused: bool = False  # matchday pauses when nobody watches — no wasted tokens
+
     def __post_init__(self) -> None:
         self.timeline = _build_timeline(self.events, self.result)
         self.momentum_series = _build_momentum_series(self.events)
         self._cursor = 0
         self._minute_cursor = 0
         self._pending: list[Item] = []
+        self._approvals_pending: list[Item] = []
         self._last_advance = time.monotonic()
+        # per-match translation cache shared by every connected feed so two
+        # viewers in the same language never pay twice for the same line
+        self.translation_cache: dict[tuple[str, str], str] = {}
+        self.events_by_id = {e.id: e for e in self.events}
 
     # ---- control ----------------------------------------------------------
 
@@ -178,6 +189,145 @@ class MatchSession:
     def recover(self, agent: str) -> None:
         self.failed.discard(agent)
 
+    # ---- producer gate ------------------------------------------------------
+
+    @staticmethod
+    def _item_id(kind: str, payload: dict) -> str:
+        return str(payload.get("id") or f"{kind}:{payload.get('minute')}")
+
+    def _held(self, kind: str, payload: dict) -> bool:
+        """An insight/commentary whose verifier rejected it stays off air
+        until a producer approves it (or kills it outright). Fails closed."""
+        if kind not in ("insight", "commentary"):
+            return False
+        pid = self._item_id(kind, payload)
+        if pid in self.approved:
+            return False
+        v = payload.get("verification") or {}
+        return v.get("status") == "rejected"
+
+    def _airable(self, kind: str, payload: dict) -> bool:
+        if kind not in ("insight", "commentary"):
+            return True
+        return self._item_id(kind, payload) not in self.killed and not self._held(kind, payload)
+
+    def board(self) -> list[dict]:
+        """The producer console: every broadcast line with its verdict."""
+        rows = []
+        for at, kind, _, payload in self.timeline:
+            if kind not in ("insight", "commentary"):
+                continue
+            pid = self._item_id(kind, payload)
+            v = payload.get("verification") or {}
+            if pid in self.killed:
+                air = "killed"
+            elif self._held(kind, payload):
+                air = "held"
+            elif at <= self.clock:
+                air = "aired"
+            else:
+                air = "queued"
+            rows.append(
+                {
+                    "id": pid,
+                    "kind": kind,
+                    "at": at,
+                    "text": payload.get("claim") or payload.get("text") or "",
+                    "air_status": air,
+                    "verdict": v.get("status"),
+                    "reason": v.get("reason"),
+                    "checks": v.get("checks") or [],
+                }
+            )
+        rows.sort(key=lambda r: r["at"])
+        return rows
+
+    def decide(self, item_id: str, decision: str) -> dict:
+        """Approve a held line (it airs at the next beat) or kill it for good."""
+        if decision == "approve":
+            self.approved.add(item_id)
+            self.killed.discard(item_id)
+            # if its slot already passed, flush it on the next advance
+            for at, kind, owner, payload in self.timeline[: self._cursor]:
+                if kind in ("insight", "commentary") and self._item_id(kind, payload) == item_id:
+                    self._approvals_pending.append((at, kind, owner, payload))
+            return {"id": item_id, "air_status": "approved"}
+        if decision == "kill":
+            self.killed.add(item_id)
+            self.approved.discard(item_id)
+            return {"id": item_id, "air_status": "killed"}
+        raise ValueError(f"decision must be approve|kill, got {decision!r}")
+
+    def seed_bad_claim(self) -> dict:
+        """Red-team demo: inject a fabricated line and watch the gate refuse it.
+
+        Plants a false score and an invented stat, runs them through the real
+        Verifier, and inserts them into the timeline — where they land in the
+        producer's hold queue instead of on screen.
+        """
+        from src.agents.verifier import VerifierAgent, _Facts  # noqa: PLC0415
+
+        facts = _Facts(self.events)
+        verifier = VerifierAgent()
+        minute = min(int(self.clock // 60), 89)
+        h, a = facts.score_at(minute)
+        bad_score = f"{h + 1}-{a}" if h < 9 else f"{h}-{a + 1}"
+
+        from src.events.schema import CommentaryEntry, Insight  # noqa: PLC0415
+
+        planted = Insight(
+            id=f"ins_planted_{int(self.clock)}",
+            type="narrative",
+            claim=f"Home have created {facts.home_xg * 1.5 + 2.37:.2f} xG of pressure",
+            value=facts.home_xg * 1.5 + 2.37,
+            confidence=0.9,
+            evidence=[],
+            agent="analyst",
+            timestamp=f"{minute}:00",
+        )
+        v_ins = verifier.verify_insight(planted, self.events, facts)
+        planted.verification = v_ins
+        insd = planted.model_dump()
+        insd["reveal_minute"] = minute
+
+        entry = CommentaryEntry(
+            id=f"com_planted_{int(self.clock)}",
+            minute=minute,
+            second=0,
+            text=f"And it's {bad_score} now as the pressure tells!",
+            insight_ids=[planted.id],
+        )
+        v_com = verifier.verify_commentary(entry, self.events, {planted.id: v_ins}, facts)
+        entry.verification = v_com
+        cd = entry.model_dump()
+
+        at = float(self.clock + 2)
+        self.timeline.append((at, "insight", "analyst", insd))
+        self.timeline.append((at + 1, "commentary", "commentator", cd))
+        self.timeline.sort(key=lambda it: it[0])
+        return {
+            "planted": [insd["claim"], cd["text"]],
+            "verdicts": {
+                planted.id: v_ins.model_dump(),
+                entry.id: v_com.model_dump(),
+            },
+        }
+
+    # ---- cost guard -----------------------------------------------------------
+
+    def add_viewer(self) -> None:
+        self.viewers += 1
+        if self.auto_paused:
+            self.auto_paused = False
+            self.play()
+
+    def remove_viewer(self) -> None:
+        self.viewers = max(0, self.viewers - 1)
+        if self.viewers == 0 and self.playing:
+            # nobody watching → the matchday pauses; agents stop spending
+            self.pause()
+            self.auto_paused = True
+
     # ---- playback ---------------------------------------------------------
 
     def advance(self) -> list[tuple[str, dict]]:
@@ -189,6 +339,11 @@ class MatchSession:
         if self.playing:
             self.clock = min(self.clock + dt * self.speed, float(MATCH_SECONDS))
 
+        # approvals flush: a held line the producer cleared airs immediately
+        for _, kind, _, payload in self._approvals_pending:
+            frames.append((kind, {**payload, "approved": True}))
+        self._approvals_pending = []
+
         # raw event batch (always live, even while specialists are degraded)
         batch: list[dict] = []
         while self._cursor < len(self.timeline) and self.timeline[self._cursor][0] <= self.clock:
@@ -197,6 +352,8 @@ class MatchSession:
             if owner and owner in self.failed:
                 self._pending.append((at, kind, owner, payload))
                 continue
+            if not self._airable(kind, payload):
+                continue  # held by the verifier gate or killed by the producer
             if kind == "event":
                 batch.append(payload)
             else:
@@ -265,12 +422,16 @@ class MatchSession:
         score = self._score()
         minute = int(self.clock // 60)
         revealed = {kind: [] for kind in ("detection", "insight", "commentary")}
+        held: list[dict] = []
         events_so_far: list[dict] = []
         for _at, kind, _owner, payload in self.timeline[: self._cursor]:
             if kind == "event":
                 events_so_far.append(payload)
             elif kind in revealed:
-                revealed[kind].append(payload)
+                if self._airable(kind, payload):
+                    revealed[kind].append(payload)
+                elif self._held(kind, payload) and self._item_id(kind, payload) not in self.killed:
+                    held.append(payload)
         ms = self.momentum_series
         return {
             "match_id": self.match_id,
@@ -292,6 +453,10 @@ class MatchSession:
             "key_moments": revealed["detection"],
             "insights": revealed["insight"],
             "commentary": revealed["commentary"],
+            "held": held,
+            "verification": self.result.get("verification", {}),
+            "viewers": self.viewers,
+            "auto_paused": self.auto_paused,
             "momentum": {
                 "minutes": list(range(minute + 1)),
                 "home_cum": ms["home_cum"][: minute + 1],

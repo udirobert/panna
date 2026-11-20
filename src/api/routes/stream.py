@@ -18,15 +18,17 @@ from starlette.responses import StreamingResponse
 
 from src.api.routes.matches import _CONFIGS, _MATCHES
 from src.api.session import get_or_create_session, get_session, session_for
+from src.feed import AUDIENCES, render_frame
+from src.foundry.translate import LANGUAGES
 
 router = APIRouter()
 
-_VALID_ACTIONS = {"play", "pause", "seek", "speed", "fail", "recover"}
+_VALID_ACTIONS = {"play", "pause", "seek", "speed", "fail", "recover", "seed_bad_claim"}
 _VALID_AGENTS = {"scout", "analyst", "commentator"}
 
 
 class PlaybackCmd(BaseModel):
-    action: str = Field(..., description="one of play|pause|seek|speed|fail|recover")
+    action: str = Field(..., description="one of play|pause|seek|speed|fail|recover|seed_bad_claim")
     at: float | None = Field(None, description="seek target in match seconds (0-5400)")
     speed: float | None = Field(None, description="match-seconds per real second")
     agent: str | None = Field(None, description="specialist to fail/recover")
@@ -37,9 +39,19 @@ def _sse(kind: str, data: dict[str, Any]) -> str:
 
 
 @router.get("/{match_id}")
-async def stream(match_id: str, request: Request, autoplay: bool = False) -> StreamingResponse:
+async def stream(
+    match_id: str,
+    request: Request,
+    autoplay: bool = False,
+    lang: str = "en",
+    audience: str = "fan",
+) -> StreamingResponse:
     if match_id not in _MATCHES:
         raise HTTPException(404, "match not found; POST /matches/generate first")
+    if lang not in LANGUAGES:
+        raise HTTPException(400, f"lang must be one of {LANGUAGES}")
+    if audience not in AUDIENCES:
+        raise HTTPException(400, f"audience must be one of {AUDIENCES}")
     cfg = _CONFIGS.get(match_id)
     session = session_for(match_id, _MATCHES[match_id])
     if session is None:
@@ -57,25 +69,57 @@ async def stream(match_id: str, request: Request, autoplay: bool = False) -> Str
         # first connection for this session kicks off the match
         session.autoplay_pending = False
         session.play()
+    session.add_viewer()
+
+    def _render(kind: str, payload: dict) -> list[tuple[str, dict]]:
+        return render_frame(
+            kind,
+            payload,
+            audience=audience,
+            lang=lang,
+            cache=session.translation_cache,
+            home_team=session.home_team,
+            away_team=session.away_team,
+            events_by_id=session.events_by_id,
+        )
+
+    def _rendered_snapshot() -> dict:
+        snap = session.snapshot()
+        for key, frame_kind in (
+            ("commentary", "commentary"),
+            ("insights", "insight"),
+            ("key_moments", "detection"),
+        ):
+            rendered = []
+            for payload in snap[key]:
+                rendered.extend(p for _, p in _render(frame_kind, payload))
+            snap[key] = rendered
+        snap["lang"] = lang
+        snap["audience"] = audience
+        return snap
 
     async def gen() -> Any:
         # re-sync on epoch changes (seek/reset from the controls)
         last_epoch = session.epoch
-        yield _sse("snapshot", session.snapshot())
-        while True:
-            # bounded disconnect probe: never let the check itself hang the loop
-            try:
-                with anyio.fail_after(0.2):
-                    if await request.is_disconnected():
-                        break
-            except TimeoutError:
-                pass
-            if session.epoch != last_epoch:
-                last_epoch = session.epoch
-                yield _sse("snapshot", session.snapshot())
-            for kind, payload in session.advance():
-                yield _sse(kind, payload)
-            await asyncio.sleep(0.4)
+        try:
+            yield _sse("snapshot", _rendered_snapshot())
+            while True:
+                # bounded disconnect probe: never let the check hang the loop
+                try:
+                    with anyio.fail_after(0.2):
+                        if await request.is_disconnected():
+                            break
+                except TimeoutError:
+                    pass
+                if session.epoch != last_epoch:
+                    last_epoch = session.epoch
+                    yield _sse("snapshot", _rendered_snapshot())
+                for kind, payload in session.advance():
+                    for k, p in _render(kind, payload):
+                        yield _sse(k, p)
+                await asyncio.sleep(0.4)
+        finally:
+            session.remove_viewer()  # last viewer out → matchday pauses
 
     return StreamingResponse(
         gen(),
@@ -111,6 +155,9 @@ def playback(match_id: str, cmd: PlaybackCmd) -> dict:
             session.fail(cmd.agent)
         else:
             session.recover(cmd.agent)
+    elif cmd.action == "seed_bad_claim":
+        # red-team demo: plant a fabricated line; the verifier must catch it
+        return {"match_id": match_id, **session.seed_bad_claim()}
 
     return {
         "match_id": match_id,
@@ -120,6 +167,8 @@ def playback(match_id: str, cmd: PlaybackCmd) -> dict:
         "speed": session.speed,
         "failed": sorted(session.failed),
         "score": session.score(),
+        "viewers": session.viewers,
+        "auto_paused": session.auto_paused,
     }
 
 
@@ -136,4 +185,6 @@ def playback_state(match_id: str) -> dict:
         "speed": session.speed,
         "failed": sorted(session.failed),
         "score": session.score(),
+        "viewers": session.viewers,
+        "auto_paused": session.auto_paused,
     }

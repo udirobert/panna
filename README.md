@@ -8,6 +8,15 @@ AI-driven match intelligence for the **Microsoft Premier League "Inside the Game
 
 **Challenge:** [Inside the Game: Developer Hackathon](https://developer.microsoft.com/en-us/reactor/series/S-1709/) · **Prize pool:** $50,000 · **Hosted by:** Microsoft + Premier League
 
+**Live demo:** <https://panna.sportwarren.com> — open the app, or jump straight into a match
+(e.g. <https://panna.sportwarren.com/?match=match_63&seed=63>). Every match is
+deterministic from its seed, so any shared URL replays the same game.
+
+**For judges:** [docs/JUDGES.md](docs/JUDGES.md) is the 3-minute path ·
+[docs/PROOF.md](docs/PROOF.md) is the trust architecture ·
+[docs/CLAIMS.md](docs/CLAIMS.md) is the honest real-vs-staged ledger ·
+`GET /status` reports it live.
+
 ## Hackathon details
 
 | Field | Value |
@@ -50,10 +59,10 @@ AI-driven match intelligence for the **Microsoft Premier League "Inside the Game
 
 **Panna** is a multi-agent match intelligence engine that transforms synthetic football events into real-time, explainable match intelligence for broadcast and streaming platforms.
 
-### The 4-agent pipeline
+### The 5-agent pipeline (with an air-gate)
 
-**Presentation identity:** *Numbers see it, Chalk proves it, Booth says it* — and the
-pitch itself is the fourth actor. The interface is the match surface: agents coordinate
+**Presentation identity:** *Numbers see it, Chalk proves it, Booth says it, the Gate
+keeps it honest* — and the pitch itself is the coordination surface. Agents coordinate
 through a shared blackboard (the pitch), leaving chalk traces rather than sending
 messages. See [docs/design-vision.md](docs/design-vision.md) for the full design language
 and the demo film script ("The Verdict").
@@ -63,7 +72,16 @@ and the demo film script ("The Verdict").
 | **Scout** | **Numbers** (the swarm) | Watches the synthetic event stream, flags key moments (shots, tackles, possession shifts, formation changes) | Structured event markers with timestamps and evidence citations |
 | **Analyst** | **Chalk** (the specialists) | Computes tactical insights (xG, formation effectiveness, pressing intensity, player influence, momentum shifts) | Statistical insights with evidence citations (which events led to this conclusion) |
 | **Commentator** | **Booth** | Generates natural-language broadcast commentary from Scout + Analyst output | Live commentary text with timing, tone, and narrative arc |
-| **Director** | **the Pitch** (coordination as a place) | Orchestrates all three agents, decides what to surface and when, handles failure recovery | Curated broadcast feed with prioritized insights |
+| **Verifier** | **the Gate** | Deterministic recount — code, not a model. Recomputes every stat, score, minute, and attribution from the raw ledger; repairs fixable claims; **fails closed** on the rest | Per-line verdicts (`verified`/`repaired`/`rejected`) + the producer hold queue |
+| **Director** | **the Pitch** (coordination as a place) | Orchestrates all agents, inserts the Verifier between drafted lines and air, decides what to surface and when, handles failure recovery | Curated broadcast feed with prioritized insights |
+
+**Let AI tell the story, let code keep the score.** Every insight and commentary line
+carries a verdict from the Gate. Rejected lines never reach the screen — they wait in
+the producer's hold queue at `/producer?match={id}` for a human approve/kill. Plant a
+lie yourself: `POST /stream/playback/{match}` `{action:"seed_bad_claim"}` injects a
+fabricated score + invented stat and watches the gate refuse them. Proof and measured
+catch rates: [docs/PROOF.md](docs/PROOF.md) ·
+[reports/verifier-redteam.md](reports/verifier-redteam.md).
 
 ### Why this wins
 
@@ -91,9 +109,43 @@ The judging rubric scores 5 categories at 20% each. Panna targets **4 prize cate
   Insight/Commentary shapes are produced by the deterministic models, so the
   product, tests, and demo never depend on the network. The header shows
   which path ran (provenance), never pretending.
+- **The Verifier gate** — every broadcast item is recounted by deterministic
+  code *independent of the agents that wrote it* before it may air
+  (`src/agents/verifier.py`): stats, scorelines, minutes and attribution
+  recount from the raw ledger; decimals in evidence-bound insights must come
+  from the cited events, not anywhere in the match; betting/certainty/
+  real-league wording is banned outright; causal wording ("because", "cost
+  them") fails closed until a sim model exists to back it; lines capped at
+  240 chars. Verified lines carry a `✓ verified` chip with a "why?" panel;
+  repairable errors air corrected (`✎ repaired`, original retained in the
+  audit); the rest are held for the producer. The gate cannot be darkened in
+  the failure demo — it is the part that is *not* a model.
+- **Producer console** — `/producer?match={id}` lists every line, verdict,
+  and air status; approve/kill is real (`/producer/{match}/decide`). Red-team
+  demo built in: one click plants fabricated lines and watches them held.
+- **Feeds for every fan** — each SSE connection renders the verified
+  broadcast for its viewer (`src/feed.py`): `?lang=es|fr|pt|de` localizes via
+  Azure AI Translator (`src/foundry/translate.py`, key or Entra auth,
+  per-match cache) *after* the gate, so nothing unverified airs in any
+  language — and `?audience=kids|ad` reshapes it: kids get jargon-free lines,
+  `ad` is a genuine audio-description track generated deterministically from
+  event positions, outcomes and body part (`src/events/audio.py`), always on
+  with no credentials. Every translated line is re-checked before it airs —
+  numbers and player names must survive verbatim — so a mangled translation
+  falls back to the verified original (`translation_problem` in the payload).
+  Unconfigured Translator serves the original text labelled
+  `translation=original` — honest, never silent.
+- **Keyless Azure auth** — managed identity + `DefaultAzureCredential` mint
+  Entra tokens for the Foundry endpoint (and Translator via
+  `TRANSLATOR_AUTH=entra`); the Bicep module assigns
+  `Cognitive Services OpenAI User` to the container app's identity. No stored
+  secrets. API-key env auth remains for local dev.
+- **Cost guard + ledger** — the matchday auto-pauses when the last viewer
+  disconnects and resumes when one returns (agents only spend when watched);
+  `GET /status` reports per-match tokens + estimated spend.
 - **Azure Container Apps** — the API ships as a container with a
-  self-contained Bicep module (httpConcurrency scaling, health probe,
-  `@secure()` secret) and a one-command `azure/deploy.sh` (build → ACR →
+  self-contained Bicep module (system-assigned identity, httpConcurrency
+  scaling, health probe) and a one-command `azure/deploy.sh` (build → ACR →
   deploy → public endpoint). `Dockerfile`, `azure/`.
 
 **Staged (definition ready, executes once an Azure subscription is attached):**
@@ -142,7 +194,8 @@ The platform is built so the match can be consumed outside the Panna frontend:
   **Model Context Protocol**, so any MCP client (Copilot, Claude Desktop, a
   custom agent) can pull a match by seed and verify its evidence:
   `match_info`, `match_events`, `team_summary`, `match_insights`,
-  `event_details`.
+  `event_details` — plus `verify_line`, which runs the broadcast Verifier over
+  any prose so an external agent can audit a claim without trusting Panna.
   ```bash
   panna-mcp                 # run the MCP server (stdio transport)
   ```

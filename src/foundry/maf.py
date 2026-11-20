@@ -326,12 +326,33 @@ def _maf_client() -> tuple[Any, str | None]:
     try:
         from agent_framework.openai import OpenAIChatClient
 
-        client = OpenAIChatClient(
-            model=fc.deployment,
-            api_key=fc.api_key,
-            azure_endpoint=fc.endpoint,
-            api_version=fc.api_version,
-        )
+        kwargs: dict[str, Any] = {
+            "model": fc.deployment,
+            "azure_endpoint": fc.endpoint,
+            "api_version": fc.api_version,
+        }
+        if fc.auth_mode == "entra":
+            try:
+                from azure.identity import (
+                    DefaultAzureCredential,
+                    get_bearer_token_provider,
+                )
+
+                kwargs["azure_ad_token_provider"] = get_bearer_token_provider(
+                    DefaultAzureCredential(),
+                    "https://cognitiveservices.azure.com/.default",
+                )
+            except ImportError:
+                return None, None
+        else:
+            kwargs["api_key"] = fc.api_key
+        try:
+            client = OpenAIChatClient(**kwargs)
+        except TypeError:
+            # older MAF builds: fall back to whatever auth kwargs it accepts
+            kwargs.pop("azure_ad_token_provider", None)
+            kwargs["api_key"] = fc.api_key or "keyless"
+            client = OpenAIChatClient(**kwargs)
         return client, fc.deployment
     except Exception:  # noqa: BLE001
         return None, None

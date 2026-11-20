@@ -162,6 +162,26 @@ def _tool_event_details() -> dict:
     return {"requested": list(ids), "found": out}
 
 
+def _tool_verify_line() -> dict:
+    """Run any line of prose through the broadcast Verifier — the auditor,
+    callable from any MCP client. Returns the same Verdict the air-gate uses.
+    """
+    from src.agents.verifier import VerifierAgent
+    from src.events.schema import CommentaryEntry
+
+    text = str(_arg("text", ""))
+    minute = int(_arg("minute", 45))
+    _, events = _load(_arg("match_id"))
+    entry = CommentaryEntry(id="mcp_verify", minute=minute, second=0, text=text, insight_ids=[])
+    verdict = VerifierAgent().verify_commentary(entry, events)
+    return {
+        "match_id": _arg("match_id"),
+        "line": text,
+        "verdict": verdict.model_dump(),
+        "note": "verified | rejected — the same gate broadcast lines must pass",
+    }
+
+
 def _arg(name: str, default: Any = None) -> Any:
     """Read the current call's arguments (set by the on_call_tool handler)."""
     return _ARGS.get(name, default)
@@ -228,8 +248,7 @@ _TOOLS: list[types.Tool] = [
     types.Tool(
         name="event_details",
         description=(
-            "Fetch specific events by id — the grounding step for verifying any "
-            "insight's evidence."
+            "Fetch specific events by id — the grounding step for verifying any insight's evidence."
         ),
         input_schema={
             "type": "object",
@@ -238,6 +257,28 @@ _TOOLS: list[types.Tool] = [
                 "event_ids": {"type": "array", "items": {"type": "string"}},
             },
             "required": ["match_id", "event_ids"],
+        },
+    ),
+    types.Tool(
+        name="verify_line",
+        description=(
+            "Audit a line of match prose against the deterministic recount gate — "
+            "every number is rechecked against the event ledger. Returns the same "
+            "verdict (verified | rejected, with per-check detail) that broadcast "
+            "lines receive before they may air."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "match_id": {"type": "string"},
+                "text": {"type": "string", "description": "the line to audit"},
+                "minute": {
+                    "type": "integer",
+                    "default": 45,
+                    "description": "match minute the line refers to (for score checks)",
+                },
+            },
+            "required": ["match_id", "text"],
         },
     ),
 ]
@@ -250,6 +291,7 @@ def _handler_for(name: str) -> Any:
         "team_summary": _tool_team_summary,
         "match_insights": _tool_match_insights,
         "event_details": _tool_event_details,
+        "verify_line": _tool_verify_line,
     }.get(name)
 
 
@@ -284,8 +326,7 @@ def build_server() -> Server:
     return Server(
         "panna",
         instructions=(
-            "Query a deterministic synthetic football match: stats, events, and "
-            "grounded insights."
+            "Query a deterministic synthetic football match: stats, events, and grounded insights."
         ),
         on_list_tools=_on_list_tools,
         on_call_tool=_on_call_tool,

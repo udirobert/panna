@@ -16,6 +16,9 @@ dependencies = [
     # Model Context Protocol — exposes the match toolkit to any MCP client
     # (Copilot, Claude Desktop, custom agents).
     "mcp>=2.0",
+    # Keyless Azure auth — DefaultAzureCredential mints Entra tokens for the
+    # Foundry endpoint when no API key is configured (managed identity on ACA).
+    "azure-identity>=1.19",
 ]
 
 [tool.ruff]

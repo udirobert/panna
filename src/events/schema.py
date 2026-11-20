@@ -53,6 +53,25 @@ class Event(BaseModel):
         return self.minute * 60 + self.second
 
 
+class Verdict(BaseModel):
+    """The Verifier's ruling on one broadcast item.
+
+    Statuses:
+    - ``verified`` — every checkable number recounted from the event ledger.
+    - ``repaired`` — a wrong number was corrected by the deterministic repair
+      pass (``repair_of`` keeps the original text); airs, flagged.
+    - ``rejected`` — failed a check it could not repair; held off air for the
+      producer. Fails closed: nothing unverified reaches the screen.
+    """
+
+    item_id: str
+    kind: str  # insight | commentary
+    status: str  # verified | repaired | rejected
+    reason: str | None = None
+    checks: list[dict[str, Any]] = Field(default_factory=list)
+    repair_of: str | None = None
+
+
 class Insight(BaseModel):
     """Explainable tactical insight produced by the Analyst agent."""
 
@@ -64,6 +83,7 @@ class Insight(BaseModel):
     evidence: list[str] = Field(..., description="List of event ids supporting this insight")
     agent: str = "analyst"
     timestamp: str = "0:00"
+    verification: Verdict | None = None
 
 
 class KeyMoment(BaseModel):
@@ -81,11 +101,13 @@ class KeyMoment(BaseModel):
 class CommentaryEntry(BaseModel):
     """Timed broadcast commentary produced by the Commentator agent."""
 
+    id: str = ""
     minute: int
     second: int
     text: str
     tone: str = "broadcast"
     insight_ids: list[str] = Field(default_factory=list)
+    verification: Verdict | None = None
 
 
 class AgentHealth(BaseModel):

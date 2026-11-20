@@ -6,6 +6,7 @@ from src.agents.base import BaseAgent
 from src.agents.commentator import CommentatorAgent
 from src.agents.recap import RecapAgent
 from src.agents.scout import ScoutAgent
+from src.agents.verifier import verify_broadcast
 from src.events.schema import AgentHealth
 
 
@@ -108,13 +109,32 @@ class DirectorAgent(BaseAgent):
                 self.health["commentator"] = AgentHealth(agent="commentator", status="healthy")
             shared["commentary_source"] = "template"
 
-        # 5. Prioritize broadcast feed: goals + high-importance moments first
+        # 5. Verifier gate: every line is recounted from the raw event ledger
+        #    before it may air. Independent of the agents that wrote it;
+        #    rejects fail closed into the producer's hold queue.
+        try:
+            verdicts = verify_broadcast(shared, events)
+            self.health["verifier"] = AgentHealth(agent="verifier", status="healthy")
+        except Exception as exc:  # noqa: BLE001 — the gate itself must never
+            errors["verifier"] = str(exc)  # crash the broadcast; fail closed
+            verdicts = {}
+            self.health["verifier"] = AgentHealth(agent="verifier", status="down", error=str(exc))
+        vsum = {"checked": 0, "verified": 0, "repaired": 0, "rejected": 0}
+        for v in verdicts.values():
+            vsum["checked"] += 1
+            if v.status in vsum:
+                vsum[v.status] += 1
+        shared["verdicts"] = verdicts
+
+        # 6. Prioritize broadcast feed: goals + high-importance moments first
         feed = self._prioritize(shared)
 
         return {
             "key_moments": shared["key_moments"],
             "insights": shared["insights"],
             "commentary": shared["commentary"],
+            "verdicts": verdicts,
+            "verification": vsum,
             "commentary_source": shared.get("commentary_source", "template"),
             "reasoning_source": shared.get("reasoning_source", "template"),
             "reasoning_model": shared.get("reasoning_model"),

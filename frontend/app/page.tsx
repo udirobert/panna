@@ -30,10 +30,15 @@ export default function Home() {
   const [engineError, setEngineError] = useState<string | null>(null);
   const [booting, setBooting] = useState(false);
   const [liveMsg, setLiveMsg] = useState<string>("");
+  const [feed, setFeed] = useState<string>("en-fan");
   const lastGoalRef = useRef<string | null>(null);
   const bootedRef = useRef(false);
 
-  const s = useMatchStream(active ? matchId : null, seed);
+  const [feedLang, feedAudience] = feed.split("-") as [string, string];
+  const s = useMatchStream(active ? matchId : null, seed, {
+    lang: feedLang,
+    audience: feedAudience,
+  });
   const homeName = s.snapshot?.home_team ?? "Home";
   const awayName = s.snapshot?.away_team ?? "Away";
 
@@ -299,9 +304,48 @@ export default function Home() {
             </select>
           )}
           {active && (
+            <select
+              value={feed}
+              onChange={(e) => setFeed(e.target.value)}
+              title="feed — language and audience, rendered per-connection after the gate"
+              style={{
+                background: "rgba(8,16,12,0.9)",
+                color: "#e8f2ec",
+                border: "1px solid rgba(235,250,240,0.25)",
+                borderRadius: 6,
+                padding: "7px 8px",
+                fontSize: 13,
+              }}
+            >
+              <option value="en-fan">🇬🇧 English</option>
+              <option value="en-kids">🧒 Kids</option>
+              <option value="en-ad">🎧 Audio description</option>
+              <option value="es-fan">🇪🇸 Español</option>
+              <option value="fr-fan">🇫🇷 Français</option>
+              <option value="pt-fan">🇵🇹 Português</option>
+              <option value="de-fan">🇩🇪 Deutsch</option>
+            </select>
+          )}
+          {active && (
             <button className="btn" onClick={openShare} title="open the shareable case-file poster">
               ⇪ SHARE
             </button>
+          )}
+          {active && (
+            <a
+              className="btn"
+              href={`/producer?match=${matchId}`}
+              target="_blank"
+              rel="noreferrer"
+              title="producer console — approve or kill held lines"
+            >
+              🎛 STUDIO
+              {(s.snapshot?.held?.length ?? 0) > 0 && (
+                <span style={{ color: "var(--warn)", marginLeft: 4 }}>
+                  {s.snapshot?.held?.length} held
+                </span>
+              )}
+            </a>
           )}
           <button className="btn" onClick={arm}>
             {resetArmed ? "⟳ CONFIRM" : "⟳ NEW FIXTURE"}
